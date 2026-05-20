@@ -1,6 +1,8 @@
 <div align="center">
 
-<h1>🧬 GenEvolve</h1>
+<img src="assets/logo_genevolve.png" alt="GenEvolve" width="160">
+
+<h1>GenEvolve</h1>
 
 <p><strong><em>Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</em></strong></p>
 
