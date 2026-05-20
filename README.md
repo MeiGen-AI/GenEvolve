@@ -76,7 +76,7 @@ GenEvolve uses one full CUDA Python environment for model serving, agent rollout
 
 ### Full GenEvolve environment - `genevolve`
 
-Use this environment for the released code path: serving `GenEvolve-8B`, running the agent, calling tools, and rendering final images with Qwen/Nano backends.
+Use this environment for the released code path: serving `GenEvolve-8B`, running the agent, calling tools, and rendering final images with Qwen/Nano backends. Install it once using the Quickstart commands below.
 
 | Component | Version | Notes |
 |---|---|---|
@@ -90,20 +90,6 @@ Use this environment for the released code path: serving `GenEvolve-8B`, running
 | `flash-attn` | `2.8.3` |
 | `diffusers` | `>=0.38` for `QwenImageEditPlusPipeline` |
 
-```bash
-conda create -n genevolve python=3.11 -y
-conda activate genevolve
-
-# Install PyTorch first so CUDA extensions such as flash-attn build against
-# the correct torch/CUDA pair. Adjust the CUDA wheel index if your cluster
-# standardizes on another CUDA minor version.
-pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-
-# Install the full GenEvolve runtime stack.
-pip install --no-build-isolation -r requirements.txt
-pip install -e .
-```
-
 This is the normal full environment for the released code path. The released repository provides the model runtime, tools, skills, generator wrappers, and dataset links.
 
 ### External services
@@ -115,7 +101,7 @@ This is the normal full environment for the released code path. The released rep
 
 ## 🚀 Quickstart
 
-### 1. Install the agent runtime
+### 1. Install the GenEvolve environment
 
 ```bash
 git clone https://github.com/Ephemeral182/GenEvolve.git
