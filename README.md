@@ -4,17 +4,17 @@
 
 <h1>GenEvolve</h1>
 
-<h3><em>Self-Evolving Image Generation Agents via<br>Tool-Orchestrated Visual Experience Distillation</em></h3>
+<p><strong><em>Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</em></strong></p>
 
 <p>
   <a href="https://ephemeral182.github.io/GenEvolve/">
-    <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb?style=for-the-badge"></a>
+    <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
   <a href="https://arxiv.org/abs/XXXX.XXXXX">
-    <img alt="arXiv" src="https://img.shields.io/badge/📄_arXiv-XXXX.XXXXX-b31b1b?style=for-the-badge"></a>
+    <img alt="arXiv" src="https://img.shields.io/badge/📄_arXiv-XXXX.XXXXX-b31b1b"></a>
   <a href="https://huggingface.co/Ephemeral182/GenEvolve-8B">
-    <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve--8B-FFD21E?style=for-the-badge"></a>
+    <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve--8B-FFD21E"></a>
   <a href="https://github.com/Ephemeral182/GenEvolve">
-    <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717?style=for-the-badge"></a>
+    <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717"></a>
 </p>
 
 <p>
