@@ -217,7 +217,9 @@ python scripts/generate_images.py \
     --backend nano-banana-pro
 ```
 
-## 🧩 Programmatic API
+## 🧩 Optional Python Usage
+
+If you only want to run the provided scripts, you can skip this section. This is for users who want to call the agent and renderer directly from their own Python pipeline instead of going through `scripts/run_agent.py` and `scripts/generate_images.py`.
 
 ```python
 from genevolve import GenEvolveAgent
