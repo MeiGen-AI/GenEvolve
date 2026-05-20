@@ -8,8 +8,7 @@ generator and saves the rendered images.
 
 Backends
 --------
-- ``qwen-image-edit``  : local diffusers run of ``Qwen/Qwen-Image-Edit-2509`` /
-                         ``2511``.
+- ``qwen-image-edit``  : local diffusers run of ``Qwen/Qwen-Image-Edit-2511``.
 - ``qwen-image-edit-service`` : POSTs to a self-hosted Qwen-Image-Edit FastAPI
                                 service (``--service-url`` may be repeated).
 - ``nano-banana-pro``  : Google Generative Language API

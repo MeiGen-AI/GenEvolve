@@ -123,8 +123,8 @@ class QwenImageEditGenerator:
             from diffusers import QwenImageEditPlusPipeline  # type: ignore
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "QwenImageEditGenerator requires `torch` and `diffusers>=0.32`. "
-                "Install with `pip install torch diffusers`."
+                "QwenImageEditGenerator requires `torch` and `diffusers>=0.38`. "
+                "Install the Qwen renderer extra with `pip install -e \".[qwen]\"`."
             ) from exc
         torch_dtype = getattr(torch, self.dtype)
         self._pipe = QwenImageEditPlusPipeline.from_pretrained(

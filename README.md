@@ -33,11 +33,11 @@
 > [**Sixiang Chen**](https://ephemeral182.github.io/)<sup>1</sup>, [**Zhaohu Xing**](https://ge-xing.github.io/)<sup>1</sup>, [**Tian Ye**](https://owen718.github.io/)<sup>1</sup>, [**Xinyu Geng**](https://scholar.google.com/citations?user=rYB-IBwAAAAJ&hl=zh-CN)<sup>2</sup>, [**Yunlong Lin**](https://lyl1015.github.io/)<sup>3</sup>, [**Jianyu Lai**](https://alexlai2860.github.io/)<sup>1</sup>, [**Xuanhua He**](https://xuanhuahe.github.io/)<sup>2</sup>, [**Fuxiang Zhai**](https://fuxiangzhai.github.io/)<sup>1</sup>, [**Jialin Gao**](https://scholar.google.com/citations?user=sj4FqEgAAAAJ&hl=zh-CN)<sup>4</sup>, [**Lei Zhu**](https://sites.google.com/site/indexlzhu/home)<sup>1,2</sup>†
 >
 > <sup>1</sup>The Hong Kong University of Science and Technology (Guangzhou)
-> 
+>
 > <sup>2</sup>The Hong Kong University of Science and Technology
-> 
+>
 > <sup>3</sup>The Chinese University of Hong Kong
-> 
+>
 > <sup>4</sup>National University of Singapore
 >
 > †Corresponding Author
@@ -53,51 +53,9 @@
 
 ## 🌟 What is GenEvolve?
 
-GenEvolve formulates open-ended image generation as a **tool-orchestrated visual trajectory**. The agent gathers external textual evidence, retrieves visual references, performs **internal knowledge activation** through callable generation skills, and synthesizes a **prompt-reference program** $z = (g, R)$ that any reference-conditioned generator can render. Trained with GRPO + Visual Experience Distillation, the released `GenEvolve-8B` policy is **generator-transferable** — drop-in compatible with both open and strong proprietary renderers.
+GenEvolve formulates open-ended image generation as a **tool-orchestrated visual trajectory**. The agent gathers external textual evidence, retrieves visual references, performs **internal knowledge activation** through callable generation skills, and synthesizes a **prompt-reference program** $z = (g, R)$ that any reference-conditioned generator can render.
 
-## 🧠 Method overview
-
-<p align="center"><img src="assets/overview.png" alt="GenEvolve method overview" width="92%"></p>
-
-For a user request $x$, the agent samples a multi-turn trajectory
-
-$$\tau = (a_1, o_1, \ldots, a_T, o_T, z), \qquad z = (g, R),$$
-
-where each $a_t$ is one of the three actions below and $o_t$ is the corresponding observation. The downstream generator renders $\hat{y} = G(g, R)$.
-
-<table>
-  <thead>
-    <tr><th>Tool</th><th>Role</th><th>Output</th></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>search(queries)</code></td>
-      <td>External textual evidence — entities, dates, facts.</td>
-      <td>Markdown digest.</td>
-    </tr>
-    <tr>
-      <td><code>image_search(query)</code></td>
-      <td>Visual references; each result gets a unique <code>IMG_###</code> id.</td>
-      <td>Image list with local paths.</td>
-    </tr>
-    <tr>
-      <td><code>query_knowledge(skill_name)</code></td>
-      <td><strong>Internal knowledge activation</strong> — invokes one of the eight callable generation skills.</td>
-      <td>Skill instructions in Markdown.</td>
-    </tr>
-  </tbody>
-</table>
-
-The final answer is a JSON object — the **prompt-reference program**:
-
-```json
-{
-  "gen_prompt": "... a targeted instruction that refers to references by ordinal phrases ('the first reference image', 'the second reference image') ...",
-  "reference_images": [
-    {"img_id": "IMG_001", "note": "what to copy from this reference"}
-  ]
-}
-```
+The released `GenEvolve-8B` policy is based on Qwen3-VL-8B and is designed to be **generator-transferable**: the same agent output can be rendered by the open Qwen-Image-Edit backend or by a stronger proprietary renderer such as Nano Banana Pro.
 
 ## 🎁 What's released
 
@@ -107,74 +65,99 @@ The final answer is a JSON object — the **prompt-reference program**:
 | ⚡ Standalone inference runtime (`GenEvolveAgent`, OpenAI-compatible) | this repo |
 | 🛠️ Three tools (`search`, `image_search`, `query_knowledge`) | this repo |
 | 📚 The eight skill markdown files used at training time | this repo |
-| 🎨 Reference-conditioned generators (Qwen-Image-Edit + Nano Banana Pro) | this repo |
+| 🎨 Reference-conditioned generator wrappers (Qwen-Image-Edit + Nano Banana Pro) | this repo |
 | 📦 SFT trajectories (9,000 records) | 🤗 [`Ephemeral182/GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) |
 | 🎯 Self-evolution prompts + GT images (3,175 records) | 🤗 [`Ephemeral182/GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) |
 | 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`Ephemeral182/GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) |
 
-## 📦 Data
+## 📋 Requirements
 
-We release three datasets on the Hugging Face Hub. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
+The most important setup detail is that GenEvolve intentionally separates the **agent / LLM-server stack** from the optional **diffusion renderer stack**. The `requirements.txt` file is lightweight on purpose: it installs the Python client runtime and tools, while heavyweight GPU packages such as `vllm`, `sglang`, `flash-attn`, and `diffusers` are installed explicitly for the environment that needs them.
 
-| Dataset | Records | Size | Purpose |
-|---|---|---|---|
-| [`GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) | 9,000 records | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
-| [`GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) | 3,175 records | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
-| [`GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
+### Environment A - `genevolve`: agent runtime + LLM server
 
-### Quick load
+Use this environment to run `GenEvolveAgent` and to serve the released `GenEvolve-8B` checkpoint through an OpenAI-compatible API. This is the only required environment for agent rollouts.
 
-```bash
-# install once
-pip install -U huggingface_hub datasets
-
-# Download a dataset (chosen example: the held-out benchmark).
-huggingface-cli download Ephemeral182/GenEvolve-Bench \
-    --repo-type dataset --local-dir ./GenEvolve-Bench
-```
-
-```python
-from datasets import load_dataset
-
-# Held-out benchmark (594 prompts + bundled GT images).
-bench = load_dataset("Ephemeral182/GenEvolve-Bench", split="test")
-print(bench[0]["question"], bench[0]["gt_image"])
-
-# RL self-evolution split (prompts + GT images for reward scoring).
-rl = load_dataset("Ephemeral182/GenEvolve-Data-RL", split="train")
-
-# SFT cold-start trajectories (chat-format with images).
-sft = load_dataset("Ephemeral182/GenEvolve-Data-SFT", split="train")
-print(sft[0]["messages"])
-print(sft[0]["images"])
-```
-
-All paths inside the datasets are relative (e.g. `images/case_00512.jpg`, `images/traj_00213/IMG_001.jpg`); resolve them against the dataset directory you downloaded to. Per-dataset usage notes (LLaMA-Factory recipe, evaluation protocol, etc.) live on each dataset's Hub page.
-
-> Although GenEvolve's training pipeline is not part of this repository, the released SFT and RL datasets together with the inference runtime here let you reproduce every step from the user request all the way to a generated image.
-
-## 🚀 Quickstart
-
-### 1️⃣ Install
-
-GenEvolve splits into two cleanly separated environments — the **agent runtime** (lightweight, OpenAI-compatible) and an optional **downstream generator** (heavy, diffusers + CUDA). Use the matching env for the path you actually run.
+| Component | Version | Notes |
+|---|---|---|
+| Python | 3.11 tested | package metadata supports Python >= 3.10 |
+| `openai`, `requests`, `pillow` | see `requirements.txt` | lightweight agent runtime |
+| `torch` | 2.8.0 + CUDA 12.x | Qwen3-VL inference |
+| `transformers` | >= 4.57 | Qwen3-VL support |
+| `flash-attn` | 2.8.3 | fused attention used by Qwen3-VL |
+| `vllm` | >= 0.11 | recommended OpenAI-compatible server |
+| `sglang` | >= 0.5.4 | alternative OpenAI-compatible server |
 
 ```bash
-git clone https://github.com/Ephemeral182/GenEvolve.git && cd GenEvolve
-
-# (a) Agent runtime — required.
-conda create -n genevolve python=3.11 -y && conda activate genevolve
+conda create -n genevolve python=3.11 -y
+conda activate genevolve
 pip install -e .
 
-# (b) Optional: local Qwen-Image-Edit-2511 backend (CUDA + diffusers).
-#     Skip this if you only use the Nano Banana Pro renderer.
-conda create -n genevolve-qwen python=3.11 -y && conda activate genevolve-qwen
+# Pick one server stack for GenEvolve-8B.
+pip install "vllm>=0.11"
+# or
+pip install "sglang[all]>=0.5.4"
+
+# Recommended for Qwen3-VL.
+pip install flash-attn==2.8.3 --no-build-isolation
+```
+
+GPU: a single CUDA GPU with at least 24 GB VRAM can serve `GenEvolve-8B` at `tp=1`; for large batch evaluation we recommend 40 GB+ VRAM or tensor parallelism.
+
+### Environment B - `genevolve-qwen`: local Qwen-Image-Edit renderer
+
+Use this environment only when rendering with `--backend qwen-image-edit`. Skip it if you render with Nano Banana Pro or a remote Qwen-Image-Edit service.
+
+| Component | Version | Notes |
+|---|---|---|
+| Python | 3.11 tested | |
+| `torch` | >= 2.6, < 2.7 + CUDA 12.x | stable diffusers stack for Qwen Image Edit |
+| `diffusers` | >= 0.38 | must include `QwenImageEditPlusPipeline` |
+| `transformers` | >= 4.55 | |
+| `accelerate` | >= 1.0 | |
+
+```bash
+conda create -n genevolve-qwen python=3.11 -y
+conda activate genevolve-qwen
+pip install "torch>=2.6,<2.7" --index-url https://download.pytorch.org/whl/cu124
+pip install "diffusers>=0.38" "transformers>=4.55" "accelerate>=1.0"
 pip install -e ".[qwen]"
 ```
 
-The two envs do not need to be on the same machine — `scripts/run_agent.py` (agent) and `scripts/generate_images.py` (renderer) communicate through a JSON file (`results.json`), so you can run the agent on a CPU/light box and the diffusion renderer on a GPU box. See [📋 Requirements](#-requirements) below for full version pins.
+GPU: at least 24 GB VRAM. In practice, it is cleaner to put the diffusion renderer on a separate GPU or a separate machine from the LLM server.
 
-### 2️⃣ Serve the released checkpoint
+### External services
+
+| Service | Variable | Used for |
+|---|---|---|
+| [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
+| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only for `--backend nano-banana-pro` |
+
+### Training environments used for our runs
+
+These are **not required** to run this inference release, but they are useful if you want to reuse the released SFT/RL data for your own training.
+
+| Stage | Stack used in our logs |
+|---|---|
+| SFT | Python 3.11 conda env `llamafactory`; LLaMA-Factory `0.9.4.dev0`; `torch==2.9.1`; `transformers==4.57.0`; `deepspeed==0.18.9`; `flash_attn==2.8.3`; `accelerate==1.11.0`; full-parameter SFT, bf16, FlashAttention-2, DeepSpeed ZeRO-3. |
+| RL | Python 3.11 conda env `skillweaver_rl`; `rllm==0.2.1`; `verl==0.6.1`; `torch==2.8.0`; `transformers==4.57.1`; `sglang==0.5.4.post2`; `vllm==0.11.0`; `ray==2.54.1`; `flash_attn==2.8.3`; GRPO with FSDP and async SGLang rollout. |
+
+## 🚀 Quickstart
+
+### 1. Install the agent runtime
+
+```bash
+git clone https://github.com/Ephemeral182/GenEvolve.git
+cd GenEvolve
+
+conda create -n genevolve python=3.11 -y
+conda activate genevolve
+pip install -e .
+```
+
+Install either `vllm` or `sglang` in this same environment if you plan to host `GenEvolve-8B` locally. Install Environment B only when you need the local Qwen diffusion renderer.
+
+### 2. Serve the released checkpoint
 
 ```bash
 # vLLM (recommended)
@@ -184,10 +167,10 @@ MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 bash scripts/serve_vllm.sh
 MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 bash scripts/serve_sglang.sh
 ```
 
-### 3️⃣ Run an end-to-end example
+### 3. Run an end-to-end example
 
 ```bash
-export SERPER_API_KEY=<your_key>             # required for search & image_search
+export SERPER_API_KEY=<your_key>             # required for search and image_search
 export GOOGLE_API_KEY=<your_key>             # only for the Nano Banana Pro backend
 
 python examples/quickstart.py \
@@ -198,28 +181,35 @@ python examples/quickstart.py \
     --output paris.png
 ```
 
-Want the open-generator path? Swap `--backend qwen-image-edit` (defaults to `Qwen/Qwen-Image-Edit-2511`).
+For the open-generator path, use `--backend qwen-image-edit` after installing Environment B.
 
-### 4️⃣ Batch pipeline
+### 4. Batch pipeline
 
 The agent rollout and the heavy image rendering are split into two stages so they can run on different machines.
 
 ```bash
-# Stage 1 — agent rollouts → results.json (no images yet).
+# Stage 1: agent rollouts -> results.json.
 python scripts/run_agent.py \
-    --input  examples/example_prompts.jsonl \
+    --input examples/example_prompts.jsonl \
     --output-dir runs/example \
     --base-url http://localhost:8000/v1 \
     --model GenEvolve-8B \
     --parallel 4
 
-# Stage 2a — render with Qwen-Image-Edit-2511 (open).
+# Stage 2a: render locally with Qwen-Image-Edit-2511.
 python scripts/generate_images.py \
     --input runs/example/results.json \
     --output-dir runs/example_qwen \
     --backend qwen-image-edit
 
-# Stage 2b — render with Nano Banana Pro (strong).
+# Stage 2b: render through one or more remote Qwen-Image-Edit services.
+python scripts/generate_images.py \
+    --input runs/example/results.json \
+    --output-dir runs/example_qwen_service \
+    --backend qwen-image-edit-service \
+    --service-url http://your-qwen-service:8001
+
+# Stage 2c: render with Nano Banana Pro.
 python scripts/generate_images.py \
     --input runs/example/results.json \
     --output-dir runs/example_nano \
@@ -230,7 +220,7 @@ python scripts/generate_images.py \
 
 ```python
 from genevolve import GenEvolveAgent
-from genevolve.generator import QwenImageEditGenerator   # or NanoBananaProGenerator
+from genevolve.generator import QwenImageEditGenerator  # or NanoBananaProGenerator
 
 agent = GenEvolveAgent(
     model="GenEvolve-8B",
@@ -252,87 +242,103 @@ image = backend.generate(
 image.save("opera.png")
 ```
 
+## 🧠 Method overview
+
+<p align="center"><img src="assets/overview.png" alt="GenEvolve method overview" width="92%"></p>
+
+For a user request $x$, the agent samples a multi-turn trajectory
+
+$$\tau = (a_1, o_1, \ldots, a_T, o_T, z), \qquad z = (g, R),$$
+
+where each $a_t$ is one of the three actions below and $o_t$ is the corresponding observation. The downstream generator renders $\hat{y} = G(g, R)$.
+
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Role</th><th>Output</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>search(queries)</code></td>
+      <td>External textual evidence - entities, dates, facts.</td>
+      <td>Markdown digest.</td>
+    </tr>
+    <tr>
+      <td><code>image_search(query)</code></td>
+      <td>Visual references; each result gets a unique <code>IMG_###</code> id.</td>
+      <td>Image list with local paths.</td>
+    </tr>
+    <tr>
+      <td><code>query_knowledge(skill_name)</code></td>
+      <td><strong>Internal knowledge activation</strong> - invokes one of the eight callable generation skills.</td>
+      <td>Skill instructions in Markdown.</td>
+    </tr>
+  </tbody>
+</table>
+
+The final answer is a JSON object, the **prompt-reference program**:
+
+```json
+{
+  "gen_prompt": "... a targeted instruction that refers to references by ordinal phrases ('the first reference image', 'the second reference image') ...",
+  "reference_images": [
+    {"img_id": "IMG_001", "note": "what to copy from this reference"}
+  ]
+}
+```
+
+## 📦 Data
+
+We release three datasets on the Hugging Face Hub. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
+
+| Dataset | Records | Size | Purpose |
+|---|---|---|---|
+| [`GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) | 9,000 records | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
+| [`GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) | 3,175 records | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
+| [`GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
+
+### Quick load
+
+```bash
+pip install -U huggingface_hub datasets
+
+huggingface-cli download Ephemeral182/GenEvolve-Bench \
+    --repo-type dataset \
+    --local-dir ./GenEvolve-Bench
+```
+
+```python
+from datasets import load_dataset
+
+bench = load_dataset("Ephemeral182/GenEvolve-Bench", split="test")
+print(bench[0]["question"], bench[0]["gt_image"])
+
+rl = load_dataset("Ephemeral182/GenEvolve-Data-RL", split="train")
+sft = load_dataset("Ephemeral182/GenEvolve-Data-SFT", split="train")
+print(sft[0]["messages"])
+print(sft[0]["images"])
+```
+
+All paths inside the datasets are relative, for example `images/case_00512.jpg` or `images/traj_00213/IMG_001.jpg`; resolve them against the dataset directory you downloaded to. Per-dataset usage notes live on each dataset's Hub page.
+
+Although GenEvolve's training pipeline is not part of this repository, the released SFT and RL datasets together with the inference runtime here let you reproduce the path from a user request to a rendered image.
+
 ## 🖼️ Visual results
 
 <p align="center"><img src="assets/visual_comparison.png" alt="Qualitative comparison" width="100%"></p>
 
 <p align="center"><sub>The same <code>GenEvolve-8B</code> policy paired with two different reference-conditioned generators. <span style="color:#D97706">Orange</span> marks external/uncommon knowledge, <span style="color:#2563EB">blue</span> marks internal generation-knowledge requirements.</sub></p>
 
-### 🎨 Extended gallery — paired with Nano Banana Pro
+### 🎨 Extended gallery - paired with Nano Banana Pro
 
 <p align="center"><img src="assets/gallery_nano.jpg" alt="GenEvolve + Nano Banana Pro gallery" width="100%"></p>
 
-<p align="center"><sub>Additional qualitative results of <code>GenEvolve-8B</code> with Nano Banana Pro as the downstream renderer. The agent autonomously orchestrates search, reference selection, and skill activation across diverse open-ended categories — spatial layout, text rendering, quantity counting, attribute binding, anatomy/pose, creative transfer, material physics, and aesthetic drawing.</sub></p>
+<p align="center"><sub>Additional qualitative results of <code>GenEvolve-8B</code> with Nano Banana Pro as the downstream renderer. The agent autonomously orchestrates search, reference selection, and skill activation across diverse open-ended categories: spatial layout, text rendering, quantity counting, attribute binding, anatomy/pose, creative transfer, material physics, and aesthetic drawing.</sub></p>
 
-### 🎨 Extended gallery — paired with Qwen-Image-Edit (open)
+### 🎨 Extended gallery - paired with Qwen-Image-Edit (open)
 
 <p align="center"><img src="assets/gallery_qwen.jpg" alt="GenEvolve + Qwen-Image-Edit gallery" width="100%"></p>
 
-<p align="center"><sub>Same trained agent policy paired with the open-source Qwen-Image-Edit-2511 renderer. Consistent quality across both generators demonstrates that <code>GenEvolve-8B</code> learns generator-transferable tool orchestration rather than overfitting to one specific renderer.</sub></p>
-
-## 📋 Requirements
-
-GenEvolve runs across **three optional roles** that can sit on the same node or be split across machines. The two environments below cover everything you need to reproduce the paper's inference path; they do **not** need to be active at the same time on the same GPU.
-
-### 🌱 Environment A — `genevolve`: agent runtime + inference server
-
-Hosts the agent loop (`GenEvolveAgent`) and the OpenAI-compatible LLM server that serves the released `GenEvolve-8B` checkpoint. This is the only required environment.
-
-| Component | Version | Notes |
-|---|---|---|
-| Python | 3.11 | tested with the released checkpoint |
-| `torch` | 2.8.0 + CUDA 12.x | Qwen3-VL-8B inference |
-| `transformers` | ≥ 4.57 | Qwen3-VL support |
-| `flash-attn` | 2.8.3 | required by Qwen3-VL fused attention |
-| `vllm` | 0.11.x **or** | high-throughput OpenAI-compatible server (recommended) |
-| `sglang` | 0.5.x | alternative server, also OpenAI-compatible |
-| `openai` | ≥ 1.30 | client used by the agent |
-| `requests`, `pillow` | latest | search-tool I/O |
-
-GPU: any single CUDA GPU with ≥ 24 GB VRAM is enough to serve `GenEvolve-8B` at `tp=1` (we used H800 80 GB). For batch eval over `GenEvolve-Bench` (594 prompts × 6 rollouts) we recommend ≥ 40 GB VRAM or `tp=2` to keep tail latency reasonable.
-
-```bash
-conda create -n genevolve python=3.11 -y && conda activate genevolve
-pip install -e .                                   # agent runtime + tools
-
-# pick exactly one inference server
-pip install "vllm>=0.11"                           # recommended
-# or
-pip install "sglang[all]>=0.5.4"
-
-# Qwen3-VL fused attention (matches the kernel used at training time)
-pip install flash-attn==2.8.3 --no-build-isolation
-```
-
-### 🎨 Environment B — `genevolve-qwen`: local Qwen-Image-Edit-2511 renderer (optional)
-
-Only required if you use `--backend qwen-image-edit` (the open-source rendering path used in the paper). Skip if you only render with Nano Banana Pro.
-
-| Component | Version | Notes |
-|---|---|---|
-| Python | 3.11 | |
-| `torch` | 2.6.0 + CUDA 12.x | matches the diffusers Qwen Image Edit Plus pipeline |
-| `diffusers` | ≥ 0.38 | must include `QwenImageEditPlusPipeline` |
-| `transformers` | ≥ 4.55 | |
-| `accelerate` | ≥ 1.0 | |
-
-GPU: ≥ 24 GB VRAM, ideally on a separate machine from the agent server (they each consume one GPU at full throttle).
-
-```bash
-conda create -n genevolve-qwen python=3.11 -y && conda activate genevolve-qwen
-pip install "torch>=2.6,<2.7" --index-url https://download.pytorch.org/whl/cu124
-pip install "diffusers>=0.38" "transformers>=4.55" "accelerate>=1.0"
-pip install -e ".[qwen]"        # adds the GenEvolve generator wrapper
-```
-
-### 🌐 External services
-
-| Service | Variable | Used for |
-|---|---|---|
-| [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
-| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only when rendering with `--backend nano-banana-pro` (`gemini-3-pro-image-preview`) |
-
-> **Why two environments?** The agent runtime ships with `vllm` / `sglang` and pins to recent `transformers` for Qwen3-VL, while diffusers' `QwenImageEditPlusPipeline` is most stable on a slightly older PyTorch (2.6.x) and a separate `transformers` minor — exactly the same separation we use during training (we also keep an LLM-side env and a diffusion-side env). Both envs share the same `genevolve` package; they differ only in their heavy GPU stack.
+<p align="center"><sub>The same trained agent policy paired with the open-source Qwen-Image-Edit-2511 renderer. Consistent quality across both generators demonstrates that <code>GenEvolve-8B</code> learns generator-transferable tool orchestration rather than overfitting to one specific renderer.</sub></p>
 
 ## ⚙️ Configuration
 
@@ -340,22 +346,33 @@ pip install -e ".[qwen]"        # adds the GenEvolve generator wrapper
 |---|---|---|
 | `OPENAI_BASE_URL` | OpenAI-compatible chat-completions endpoint | `http://localhost:8000/v1` |
 | `OPENAI_API_KEY` | API key for the inference server | `EMPTY` |
-| `SERPER_API_KEY` | [serper.dev](https://serper.dev) key (text + image search) | _required_ |
+| `SERPER_API_KEY` | [serper.dev](https://serper.dev) key for text and image search | required |
 | `SERPER_BASE_URL` | Override for Serper-compatible gateways | `https://google.serper.dev` |
 | `IMAGE_DOWNLOAD_DIR` | Local cache for `image_search` downloads | `/tmp/genevolve_images` |
-| `GOOGLE_API_KEY` | Google Generative Language API key (Nano Banana Pro) | _required for Nano backend_ |
+| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend |
 
-`GenEvolveAgent` constructor knobs — defaults follow our latest stable inference setting and are validated to work well with the released `GenEvolve-8B` weights:
+`GenEvolveAgent` constructor knobs:
 
 | Argument | Default | Note |
 |---|---|---|
 | `max_rounds` | `11` | Max ReAct turns; the last turn is forced to emit `<answer>`. |
 | `max_tokens_per_round` | `4096` | Per-turn max new tokens. |
-| `temperature` | `0.6` | |
-| `top_p` | `0.9` | |
-| `max_prompt_length` | `6144` | Total prompt context length cap. |
-| `max_response_length` | `30000` | Total trajectory response length cap. |
+| `temperature` | `0.6` | Sampling temperature for the agent policy. |
+| `top_p` | `0.9` | Nucleus sampling for the agent policy. |
+| `max_prompt_length` | `6144` | Training/eval compatibility setting; the serving backend enforces the actual context limit. |
+| `max_response_length` | `30000` | Training/eval compatibility setting for long multi-turn trajectories. |
 | `n_max_reference_images` | `2` | Max reference images forwarded to the downstream generator. |
+
+## 🧯 Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| `search` / `image_search` returns authentication errors | Set `SERPER_API_KEY` or configure `SERPER_BASE_URL` for your internal Serper-compatible gateway. |
+| Agent cannot connect to the model | Confirm the vLLM/SGLang server is running and `OPENAI_BASE_URL` or `--base-url` ends with `/v1`. |
+| Qwen local renderer fails at import time | Install Environment B and make sure `diffusers>=0.38` is active. |
+| Qwen renderer says it needs a reference image | Qwen-Image-Edit is reference-conditioned; rerun the agent or use Nano Banana Pro for no-reference prompts. |
+| `flash-attn` build fails | Install a PyTorch/CUDA wheel first, then run `pip install flash-attn==2.8.3 --no-build-isolation`. |
+| Batch rendering resumes after interruption | `scripts/generate_images.py` writes `results.json` incrementally under the output directory. |
 
 ## 🗂️ Repository layout
 
@@ -363,15 +380,15 @@ pip install -e ".[qwen]"        # adds the GenEvolve generator wrapper
 genevolve/
 ├── genevolve/
 │   ├── agent.py               # GenEvolveAgent: ReAct loop on top of an OpenAI-compatible server
-│   ├── system_prompt.py       # the system prompt used during training
-│   ├── knowledge_tool.py      # query_knowledge: 8 callable generation skills
-│   ├── tools/web_search.py    # search + image_search (Serper.dev compatible)
+│   ├── system_prompt.py       # system prompt used by the released agent
+│   ├── knowledge_tool.py      # query_knowledge: eight callable generation skills
+│   ├── tools/web_search.py    # search + image_search (Serper-compatible)
 │   ├── generator.py           # Qwen-Image-Edit + Nano Banana Pro backends
-│   └── knowledge/skills/      # 8 skill markdown files
+│   └── knowledge/skills/      # skill markdown files
 ├── scripts/
 │   ├── serve_vllm.sh          # serve the checkpoint with vLLM
 │   ├── serve_sglang.sh        # serve the checkpoint with SGLang
-│   ├── run_agent.py           # batch agent rollouts → results.json
+│   ├── run_agent.py           # batch agent rollouts -> results.json
 │   └── generate_images.py     # render images from results.json
 ├── examples/
 │   ├── quickstart.py          # single-prompt end-to-end example
@@ -400,7 +417,3 @@ GenEvolve builds directly on **[Gen-Searcher](https://github.com/RUCAIBox/Gen-Se
 ## 📜 License
 
 Code is released under the [Apache 2.0](LICENSE) license. Released model weights inherit the upstream license of `Qwen3-VL-8B-Instruct`. Search results returned by Serper.dev and images rendered by Nano Banana Pro / Qwen-Image-Edit are governed by the respective upstream service terms.
-
-<div align="center">
-<sub>If GenEvolve helps your research, a ⭐️ on GitHub is much appreciated.</sub>
-</div>
