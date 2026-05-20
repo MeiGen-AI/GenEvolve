@@ -1,17 +1,28 @@
-# Core dependencies for the GenEvolve agent runtime.
+# Core dependencies for the GenEvolve agent runtime (Environment A).
+# These are the lightweight client-side requirements; install one inference
+# server (vllm or sglang) separately to actually serve the GenEvolve-8B
+# checkpoint. See README §Requirements for full details.
 openai>=1.30
 requests>=2.28
 pillow>=10.0
 
-# Optional: local Qwen-Image-Edit backend.
-# Install with `pip install -e ".[qwen]"` instead of editing this file.
-# torch>=2.4
-# diffusers>=0.32
-# transformers>=4.45
-# accelerate>=0.30
-
-# Optional: an OpenAI-compatible inference server for serving the released
-# checkpoint. Pick one. Both are kept out of install_requires so that users
-# can choose their preferred runtime.
-# vllm>=0.7
-# sglang>=0.4
+# --------------------------------------------------------------------------
+# Optional GPU / inference-server dependencies (NOT installed by default)
+# --------------------------------------------------------------------------
+# Install one of these in the same environment to host the released
+# GenEvolve-8B checkpoint as an OpenAI-compatible chat-completions service:
+#
+#   vllm>=0.11
+#   sglang[all]>=0.5.4
+#
+# Qwen3-VL fused attention (recommended, matches training-time kernel):
+#
+#   flash-attn==2.8.3        # pip install flash-attn==2.8.3 --no-build-isolation
+#
+# --------------------------------------------------------------------------
+# Environment B — local Qwen-Image-Edit-2511 renderer (`pip install -e ".[qwen]"`)
+# --------------------------------------------------------------------------
+# torch>=2.6,<2.7
+# diffusers>=0.38
+# transformers>=4.55
+# accelerate>=1.0

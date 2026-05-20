@@ -20,17 +20,20 @@ setup(
     include_package_data=True,
     package_data={"genevolve": ["knowledge/skills/*.md"]},
     python_requires=">=3.10",
+    # Environment A (agent runtime). Install vllm / sglang / flash-attn
+    # separately in the same env to run the inference server. See README.
     install_requires=[
         "openai>=1.30",
         "requests>=2.28",
         "pillow>=10.0",
     ],
     extras_require={
+        # Environment B (local Qwen-Image-Edit-2511 renderer).
         "qwen": [
-            "torch>=2.4",
-            "diffusers>=0.32",
-            "transformers>=4.45",
-            "accelerate>=0.30",
+            "torch>=2.6,<2.7",
+            "diffusers>=0.38",
+            "transformers>=4.55",
+            "accelerate>=1.0",
         ],
     },
     classifiers=[

@@ -18,9 +18,10 @@
 </p>
 
 <p>
-  <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
-  <img alt="pytorch" src="https://img.shields.io/badge/pytorch-2.4%2B-EE4C2C?logo=pytorch&logoColor=white">
-  <img alt="vllm" src="https://img.shields.io/badge/vLLM-0.7%2B-30A14E">
+  <img alt="python" src="https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white">
+  <img alt="pytorch" src="https://img.shields.io/badge/pytorch-2.8-EE4C2C?logo=pytorch&logoColor=white">
+  <img alt="vllm" src="https://img.shields.io/badge/vLLM-0.11-30A14E">
+  <img alt="cuda" src="https://img.shields.io/badge/CUDA-12.x-76B900?logo=nvidia&logoColor=white">
   <img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-green">
   <img alt="status" src="https://img.shields.io/badge/status-active-brightgreen">
 </p>
@@ -156,11 +157,22 @@ All paths inside the datasets are relative (e.g. `images/case_00512.jpg`, `image
 
 ### 1️⃣ Install
 
+GenEvolve splits into two cleanly separated environments — the **agent runtime** (lightweight, OpenAI-compatible) and an optional **downstream generator** (heavy, diffusers + CUDA). Use the matching env for the path you actually run.
+
 ```bash
 git clone https://github.com/Ephemeral182/GenEvolve.git && cd GenEvolve
-pip install -e .                      # core runtime
-pip install -e ".[qwen]"              # optional: local Qwen-Image-Edit backend
+
+# (a) Agent runtime — required.
+conda create -n genevolve python=3.11 -y && conda activate genevolve
+pip install -e .
+
+# (b) Optional: local Qwen-Image-Edit-2511 backend (CUDA + diffusers).
+#     Skip this if you only use the Nano Banana Pro renderer.
+conda create -n genevolve-qwen python=3.11 -y && conda activate genevolve-qwen
+pip install -e ".[qwen]"
 ```
+
+The two envs do not need to be on the same machine — `scripts/run_agent.py` (agent) and `scripts/generate_images.py` (renderer) communicate through a JSON file (`results.json`), so you can run the agent on a CPU/light box and the diffusion renderer on a GPU box. See [📋 Requirements](#-requirements) below for full version pins.
 
 ### 2️⃣ Serve the released checkpoint
 
@@ -260,48 +272,67 @@ image.save("opera.png")
 
 ## 📋 Requirements
 
-<details>
-<summary><strong>Core (always required)</strong></summary>
+GenEvolve runs across **three optional roles** that can sit on the same node or be split across machines. The two environments below cover everything you need to reproduce the paper's inference path; they do **not** need to be active at the same time on the same GPU.
 
-- Python ≥ 3.10
-- `openai` ≥ 1.30
-- `requests` ≥ 2.28
-- `pillow` ≥ 10.0
+### 🌱 Environment A — `genevolve`: agent runtime + inference server
 
-</details>
+Hosts the agent loop (`GenEvolveAgent`) and the OpenAI-compatible LLM server that serves the released `GenEvolve-8B` checkpoint. This is the only required environment.
 
-<details>
-<summary><strong>Local Qwen-Image-Edit backend (only if <code>--backend qwen-image-edit</code>)</strong></summary>
+| Component | Version | Notes |
+|---|---|---|
+| Python | 3.11 | tested with the released checkpoint |
+| `torch` | 2.8.0 + CUDA 12.x | Qwen3-VL-8B inference |
+| `transformers` | ≥ 4.57 | Qwen3-VL support |
+| `flash-attn` | 2.8.3 | required by Qwen3-VL fused attention |
+| `vllm` | 0.11.x **or** | high-throughput OpenAI-compatible server (recommended) |
+| `sglang` | 0.5.x | alternative server, also OpenAI-compatible |
+| `openai` | ≥ 1.30 | client used by the agent |
+| `requests`, `pillow` | latest | search-tool I/O |
 
-- `torch` ≥ 2.4
-- `diffusers` ≥ 0.32 — must include `QwenImageEditPlusPipeline`
-- `transformers` ≥ 4.45
-- `accelerate` ≥ 0.30
-- a CUDA-capable GPU with ≥ 24 GB VRAM (paper used H800 / A100)
+GPU: any single CUDA GPU with ≥ 24 GB VRAM is enough to serve `GenEvolve-8B` at `tp=1` (we used H800 80 GB). For batch eval over `GenEvolve-Bench` (594 prompts × 6 rollouts) we recommend ≥ 40 GB VRAM or `tp=2` to keep tail latency reasonable.
 
 ```bash
-pip install -e ".[qwen]"
+conda create -n genevolve python=3.11 -y && conda activate genevolve
+pip install -e .                                   # agent runtime + tools
+
+# pick exactly one inference server
+pip install "vllm>=0.11"                           # recommended
+# or
+pip install "sglang[all]>=0.5.4"
+
+# Qwen3-VL fused attention (matches the kernel used at training time)
+pip install flash-attn==2.8.3 --no-build-isolation
 ```
 
-</details>
+### 🎨 Environment B — `genevolve-qwen`: local Qwen-Image-Edit-2511 renderer (optional)
 
-<details>
-<summary><strong>Inference server for the released checkpoint (pick one)</strong></summary>
+Only required if you use `--backend qwen-image-edit` (the open-source rendering path used in the paper). Skip if you only render with Nano Banana Pro.
 
-- `vllm` ≥ 0.7 (recommended), or
-- `sglang` ≥ 0.4
+| Component | Version | Notes |
+|---|---|---|
+| Python | 3.11 | |
+| `torch` | 2.6.0 + CUDA 12.x | matches the diffusers Qwen Image Edit Plus pipeline |
+| `diffusers` | ≥ 0.38 | must include `QwenImageEditPlusPipeline` |
+| `transformers` | ≥ 4.55 | |
+| `accelerate` | ≥ 1.0 | |
 
-</details>
+GPU: ≥ 24 GB VRAM, ideally on a separate machine from the agent server (they each consume one GPU at full throttle).
 
-<details>
-<summary><strong>External services</strong></summary>
+```bash
+conda create -n genevolve-qwen python=3.11 -y && conda activate genevolve-qwen
+pip install "torch>=2.6,<2.7" --index-url https://download.pytorch.org/whl/cu124
+pip install "diffusers>=0.38" "transformers>=4.55" "accelerate>=1.0"
+pip install -e ".[qwen]"        # adds the GenEvolve generator wrapper
+```
+
+### 🌐 External services
 
 | Service | Variable | Used for |
 |---|---|---|
-| [serper.dev](https://serper.dev) | `SERPER_API_KEY` | `search` and `image_search` |
-| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only with `--backend nano-banana-pro` |
+| [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
+| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only when rendering with `--backend nano-banana-pro` (`gemini-3-pro-image-preview`) |
 
-</details>
+> **Why two environments?** The agent runtime ships with `vllm` / `sglang` and pins to recent `transformers` for Qwen3-VL, while diffusers' `QwenImageEditPlusPipeline` is most stable on a slightly older PyTorch (2.6.x) and a separate `transformers` minor — exactly the same separation we use during training (we also keep an LLM-side env and a diffusion-side env). Both envs share the same `genevolve` package; they differ only in their heavy GPU stack.
 
 ## ⚙️ Configuration
 
