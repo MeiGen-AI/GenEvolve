@@ -11,6 +11,7 @@ MODEL_PATH="${MODEL_PATH:?Please set MODEL_PATH to the GenEvolve checkpoint dire
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-GenEvolve-8B}"
 PORT="${PORT:-8000}"
 TP="${TP:-1}"
+DP="${DP:-1}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
 MEM_FRACTION="${MEM_FRACTION:-0.85}"
 
@@ -20,6 +21,7 @@ python -m vllm.entrypoints.openai.api_server \
   --host 0.0.0.0 \
   --port "${PORT}" \
   --tensor-parallel-size "${TP}" \
+  --data-parallel-size "${DP}" \
   --max-model-len "${MAX_MODEL_LEN}" \
   --gpu-memory-utilization "${MEM_FRACTION}" \
   --trust-remote-code

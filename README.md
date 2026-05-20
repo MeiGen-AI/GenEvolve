@@ -118,13 +118,27 @@ This installs the full GenEvolve runtime stack, including vLLM/SGLang serving, t
 
 ### 2. Serve the released checkpoint
 
-```bash
-# vLLM (recommended)
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 bash scripts/serve_vllm.sh
+The serving scripts support both tensor parallelism (`TP`) and data parallel replicas (`DP`).
 
-# or SGLang
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 bash scripts/serve_sglang.sh
+- `TP` shards one model replica across multiple GPUs.
+- `DP` launches multiple model replicas to improve throughput for many concurrent prompts.
+- Total GPU usage is `TP × DP`.
+
+```bash
+# Single GPU / single replica.
+MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=1 bash scripts/serve_vllm.sh
+
+# Higher throughput on one 8-GPU node: 8 replicas, one GPU per replica.
+MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=8 bash scripts/serve_vllm.sh
+
+# If one replica needs more memory: 4 replicas, two GPUs per replica.
+MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=2 DP=4 bash scripts/serve_vllm.sh
+
+# SGLang uses the same TP/DP environment variables.
+MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=8 bash scripts/serve_sglang.sh
 ```
+
+For a small demo, `TP=1 DP=1` is enough. For large batch inference with a high `scripts/run_agent.py --parallel` value, prefer increasing `DP` so independent prompts can be served by independent replicas. Increase `TP` when a single replica needs more GPU memory or a longer context window.
 
 ### 3. Run an end-to-end example
 

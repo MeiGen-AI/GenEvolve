@@ -6,6 +6,7 @@ MODEL_PATH="${MODEL_PATH:?Please set MODEL_PATH to the GenEvolve checkpoint dire
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-GenEvolve-8B}"
 PORT="${PORT:-8000}"
 TP="${TP:-1}"
+DP="${DP:-1}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
 
 python -m sglang.launch_server \
@@ -13,6 +14,7 @@ python -m sglang.launch_server \
   --served-model-name "${SERVED_MODEL_NAME}" \
   --host 0.0.0.0 \
   --port "${PORT}" \
-  --tp "${TP}" \
+  --tp-size "${TP}" \
+  --dp-size "${DP}" \
   --context-length "${MAX_MODEL_LEN}" \
   --trust-remote-code
