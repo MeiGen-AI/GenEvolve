@@ -100,15 +100,57 @@ The final answer is a JSON object — the **prompt-reference program**:
 
 ## 🎁 What's released
 
-| Component | This repo |
+| Component | Where |
 |---|---|
-| 🧠 Trained agent policy `GenEvolve-8B` (Qwen3-VL-8B-based) | ✅ via 🤗 HuggingFace |
-| ⚡ Standalone inference runtime (`GenEvolveAgent`, OpenAI-compatible) | ✅ |
-| 🛠️ Three tools (`search`, `image_search`, `query_knowledge`) | ✅ |
-| 📚 The eight skill markdown files used at training time | ✅ |
-| 🎨 Reference-conditioned generators (Qwen-Image-Edit + Nano Banana Pro) | ✅ |
-| 📦 GenEvolve-Data trajectories | 🔗 project page |
-| 📊 GenEvolve-Bench evaluation prompts | 🔗 project page |
+| 🧠 Trained agent policy `GenEvolve-8B` (Qwen3-VL-8B-based) | 🤗 [`Ephemeral182/GenEvolve-8B`](https://huggingface.co/Ephemeral182/GenEvolve-8B) |
+| ⚡ Standalone inference runtime (`GenEvolveAgent`, OpenAI-compatible) | this repo |
+| 🛠️ Three tools (`search`, `image_search`, `query_knowledge`) | this repo |
+| 📚 The eight skill markdown files used at training time | this repo |
+| 🎨 Reference-conditioned generators (Qwen-Image-Edit + Nano Banana Pro) | this repo |
+| 📦 SFT trajectories (8,800 train + 200 eval) | 🤗 [`Ephemeral182/GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) |
+| 🎯 Self-evolution prompts + GT images (2,575 train + 600 eval) | 🤗 [`Ephemeral182/GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) |
+| 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`Ephemeral182/GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) |
+
+## 📦 Data
+
+We release three datasets on the Hugging Face Hub. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
+
+| Dataset | Records | Size | Purpose |
+|---|---|---|---|
+| [`GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) | 8,800 train + 200 eval | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
+| [`GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) | 2,575 train + 600 eval | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
+| [`GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) | 594 test | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
+
+### Quick load
+
+```bash
+# install once
+pip install -U huggingface_hub datasets
+
+# Download a dataset (chosen example: the held-out benchmark).
+huggingface-cli download Ephemeral182/GenEvolve-Bench \
+    --repo-type dataset --local-dir ./GenEvolve-Bench
+```
+
+```python
+from datasets import load_dataset
+
+# Held-out benchmark (594 prompts + bundled GT images).
+bench = load_dataset("Ephemeral182/GenEvolve-Bench", split="test")
+print(bench[0]["question"], bench[0]["gt_image"])
+
+# RL self-evolution split (prompts + GT images for reward scoring).
+rl = load_dataset("Ephemeral182/GenEvolve-Data-RL", split="train")
+
+# SFT cold-start trajectories (chat-format with images).
+sft = load_dataset("Ephemeral182/GenEvolve-Data-SFT", split="train")
+print(sft[0]["messages"])
+print(sft[0]["images"])
+```
+
+All paths inside the datasets are relative (e.g. `images/case_00512.jpg`, `images/traj_00213/IMG_001.jpg`); resolve them against the dataset directory you downloaded to. Per-dataset usage notes (LLaMA-Factory recipe, evaluation protocol, etc.) live on each dataset's Hub page.
+
+> Although GenEvolve's training pipeline is not part of this repository, the released SFT and RL datasets together with the inference runtime here let you reproduce every step from the user request all the way to a generated image.
 
 ## 🚀 Quickstart
 
