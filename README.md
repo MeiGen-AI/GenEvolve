@@ -72,11 +72,11 @@ The released `GenEvolve-8B` policy is based on Qwen3-VL-8B and is designed to be
 
 ## 📋 Requirements
 
-GenEvolve follows the same environment split as Gen-Searcher: one LLaMA-Factory environment for SFT, and one RL/evaluation/inference environment for verl/rllm, SGLang/vLLM rollout, tool execution, and image generation. The public environment names below use `genevolve`; older internal log paths may contain historical names, but they are not part of the release.
+GenEvolve uses one full CUDA Python environment for model serving, agent rollouts, tool execution, benchmark inference, and image generation. The versions below match the environment used for our released results and follow the same general stack as Gen-Searcher.
 
-### Full RL / evaluation / inference environment - `genevolve`
+### Full GenEvolve environment - `genevolve`
 
-Use this environment for agent rollouts, held-out evaluation, OpenAI-compatible serving, SGLang/vLLM rollout, and Qwen/Nano final rendering wrappers.
+Use this environment for the released code path: serving `GenEvolve-8B`, running the agent, calling tools, and rendering final images with Qwen/Nano backends.
 
 | Component | Version | Notes |
 |---|---|---|
@@ -86,7 +86,6 @@ Use this environment for agent rollouts, held-out evaluation, OpenAI-compatible 
 | `transformers` | `4.57.1` |
 | `vllm` | `0.11.0` |
 | `sglang` | `0.5.4.post2` |
-| `verl` / `rllm` | `0.6.1` / `0.2.1` |
 | `ray` | `2.54.1` |
 | `flash-attn` | `2.8.3` |
 | `diffusers` | `>=0.38` for `QwenImageEditPlusPipeline` |
@@ -100,39 +99,12 @@ conda activate genevolve
 # standardizes on another CUDA minor version.
 pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
 
-# Install the full GenEvolve experiment stack.
+# Install the full GenEvolve runtime stack.
 pip install --no-build-isolation -r requirements.txt
 pip install -e .
 ```
 
-This is the normal full environment for the released code path: agent rollout, tool calls, image rendering, benchmark inference, and the RL stack used in our full training tree.
-
-### SFT environment - `genevolve-sft`
-
-SFT follows [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), as in Gen-Searcher. Our SFT run used full-parameter training on Qwen3-VL-8B with bf16, FlashAttention-2, and DeepSpeed ZeRO-3.
-
-| Component | Version | Notes |
-|---|---|---|
-| Python | 3.11 |
-| LLaMA-Factory | `0.9.4.dev0` in our run |
-| `torch` / `torchvision` | `2.9.1` / `0.24.1` |
-| `transformers` | `4.57.0` |
-| `datasets` | `4.0.0` |
-| `accelerate` | `1.11.0` |
-| `deepspeed` | `0.18.9` |
-| `flash-attn` | `2.8.3` |
-
-```bash
-conda create -n genevolve-sft python=3.11 -y
-conda activate genevolve-sft
-
-# In the full training tree, install LLaMA-Factory as the SFT trainer.
-cd Gen-DeepResearch-SFT/LLaMA-Factory
-pip install -e ".[torch,metrics]" --no-build-isolation
-pip install deepspeed==0.18.9 flash-attn==2.8.3 --no-build-isolation
-```
-
-The released repository provides the model, inference runtime, tools, skills, and datasets. The internal full training tree uses the same SFT/RL environment structure above; if you plug the released SFT/RL data into your own LLaMA-Factory + verl/rllm tree, use these versions as the reference.
+This is the normal full environment for the released code path. The released repository provides the model runtime, tools, skills, generator wrappers, and dataset links.
 
 ### External services
 
