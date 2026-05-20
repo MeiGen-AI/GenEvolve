@@ -1,0 +1,17 @@
+# Core dependencies for the GenEvolve agent runtime.
+openai>=1.30
+requests>=2.28
+pillow>=10.0
+
+# Optional: local Qwen-Image-Edit backend.
+# Install with `pip install -e ".[qwen]"` instead of editing this file.
+# torch>=2.4
+# diffusers>=0.32
+# transformers>=4.45
+# accelerate>=0.30
+
+# Optional: an OpenAI-compatible inference server for serving the released
+# checkpoint. Pick one. Both are kept out of install_requires so that users
+# can choose their preferred runtime.
+# vllm>=0.7
+# sglang>=0.4
