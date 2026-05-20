@@ -72,59 +72,67 @@ The released `GenEvolve-8B` policy is based on Qwen3-VL-8B and is designed to be
 
 ## 📋 Requirements
 
-The most important setup detail is that GenEvolve intentionally separates the **agent / LLM-server stack** from the optional **diffusion renderer stack**. The `requirements.txt` file is lightweight on purpose: it installs the Python client runtime and tools, while heavyweight GPU packages such as `vllm`, `sglang`, `flash-attn`, and `diffusers` are installed explicitly for the environment that needs them.
+GenEvolve follows the same environment split as Gen-Searcher: one LLaMA-Factory environment for SFT, and one RL/evaluation/inference environment for verl/rllm, SGLang/vLLM rollout, tool execution, and image generation. The public environment names below use `genevolve`; older internal log paths may contain historical names, but they are not part of the release.
 
-### Environment A - `genevolve`: agent runtime + LLM server
+### Full RL / evaluation / inference environment - `genevolve`
 
-Use this environment to run `GenEvolveAgent` and to serve the released `GenEvolve-8B` checkpoint through an OpenAI-compatible API. This is the only required environment for agent rollouts.
+Use this environment for agent rollouts, held-out evaluation, OpenAI-compatible serving, SGLang/vLLM rollout, and Qwen/Nano final rendering wrappers.
 
 | Component | Version | Notes |
 |---|---|---|
-| Python | 3.11 tested | package metadata supports Python >= 3.10 |
-| `openai`, `requests`, `pillow` | see `requirements.txt` | lightweight agent runtime |
-| `torch` | 2.8.0 + CUDA 12.x | Qwen3-VL inference |
-| `transformers` | >= 4.57 | Qwen3-VL support |
-| `flash-attn` | 2.8.3 | fused attention used by Qwen3-VL |
-| `vllm` | >= 0.11 | recommended OpenAI-compatible server |
-| `sglang` | >= 0.5.4 | alternative OpenAI-compatible server |
+| Python | 3.11 |
+| CUDA stack | CUDA 12.x; our logs used PyTorch CUDA 12.8 wheels |
+| `torch` / `torchvision` | `2.8.0` / `0.23.0` |
+| `transformers` | `4.57.1` |
+| `vllm` | `0.11.0` |
+| `sglang` | `0.5.4.post2` |
+| `verl` / `rllm` | `0.6.1` / `0.2.1` |
+| `ray` | `2.54.1` |
+| `flash-attn` | `2.8.3` |
+| `diffusers` | `>=0.38` for `QwenImageEditPlusPipeline` |
 
 ```bash
 conda create -n genevolve python=3.11 -y
 conda activate genevolve
+
+# Install PyTorch first so CUDA extensions such as flash-attn build against
+# the correct torch/CUDA pair. Adjust the CUDA wheel index if your cluster
+# standardizes on another CUDA minor version.
+pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+
+# Install the full GenEvolve experiment stack.
+pip install --no-build-isolation -r requirements.txt
 pip install -e .
-
-# Pick one server stack for GenEvolve-8B.
-pip install "vllm>=0.11"
-# or
-pip install "sglang[all]>=0.5.4"
-
-# Recommended for Qwen3-VL.
-pip install flash-attn==2.8.3 --no-build-isolation
 ```
 
-GPU: a single CUDA GPU with at least 24 GB VRAM can serve `GenEvolve-8B` at `tp=1`; for large batch evaluation we recommend 40 GB+ VRAM or tensor parallelism.
+This is the normal full environment for the released code path: agent rollout, tool calls, image rendering, benchmark inference, and the RL stack used in our full training tree.
 
-### Environment B - `genevolve-qwen`: local Qwen-Image-Edit renderer
+### SFT environment - `genevolve-sft`
 
-Use this environment only when rendering with `--backend qwen-image-edit`. Skip it if you render with Nano Banana Pro or a remote Qwen-Image-Edit service.
+SFT follows [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), as in Gen-Searcher. Our SFT run used full-parameter training on Qwen3-VL-8B with bf16, FlashAttention-2, and DeepSpeed ZeRO-3.
 
 | Component | Version | Notes |
 |---|---|---|
-| Python | 3.11 tested | |
-| `torch` | >= 2.6, < 2.7 + CUDA 12.x | stable diffusers stack for Qwen Image Edit |
-| `diffusers` | >= 0.38 | must include `QwenImageEditPlusPipeline` |
-| `transformers` | >= 4.55 | |
-| `accelerate` | >= 1.0 | |
+| Python | 3.11 |
+| LLaMA-Factory | `0.9.4.dev0` in our run |
+| `torch` / `torchvision` | `2.9.1` / `0.24.1` |
+| `transformers` | `4.57.0` |
+| `datasets` | `4.0.0` |
+| `accelerate` | `1.11.0` |
+| `deepspeed` | `0.18.9` |
+| `flash-attn` | `2.8.3` |
 
 ```bash
-conda create -n genevolve-qwen python=3.11 -y
-conda activate genevolve-qwen
-pip install "torch>=2.6,<2.7" --index-url https://download.pytorch.org/whl/cu124
-pip install "diffusers>=0.38" "transformers>=4.55" "accelerate>=1.0"
-pip install -e ".[qwen]"
+conda create -n genevolve-sft python=3.11 -y
+conda activate genevolve-sft
+
+# In the full training tree, install LLaMA-Factory as the SFT trainer.
+cd Gen-DeepResearch-SFT/LLaMA-Factory
+pip install -e ".[torch,metrics]" --no-build-isolation
+pip install deepspeed==0.18.9 flash-attn==2.8.3 --no-build-isolation
 ```
 
-GPU: at least 24 GB VRAM. In practice, it is cleaner to put the diffusion renderer on a separate GPU or a separate machine from the LLM server.
+The released repository provides the model, inference runtime, tools, skills, and datasets. The internal full training tree uses the same SFT/RL environment structure above; if you plug the released SFT/RL data into your own LLaMA-Factory + verl/rllm tree, use these versions as the reference.
 
 ### External services
 
@@ -132,15 +140,6 @@ GPU: at least 24 GB VRAM. In practice, it is cleaner to put the diffusion render
 |---|---|---|
 | [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
 | [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only for `--backend nano-banana-pro` |
-
-### Training environments used for our runs
-
-These are **not required** to run this inference release, but they are useful if you want to reuse the released SFT/RL data for your own training.
-
-| Stage | Stack used in our logs |
-|---|---|
-| SFT | Python 3.11 conda env `llamafactory`; LLaMA-Factory `0.9.4.dev0`; `torch==2.9.1`; `transformers==4.57.0`; `deepspeed==0.18.9`; `flash_attn==2.8.3`; `accelerate==1.11.0`; full-parameter SFT, bf16, FlashAttention-2, DeepSpeed ZeRO-3. |
-| RL | Python 3.11 conda env `skillweaver_rl`; `rllm==0.2.1`; `verl==0.6.1`; `torch==2.8.0`; `transformers==4.57.1`; `sglang==0.5.4.post2`; `vllm==0.11.0`; `ray==2.54.1`; `flash_attn==2.8.3`; GRPO with FSDP and async SGLang rollout. |
 
 ## 🚀 Quickstart
 
@@ -152,10 +151,12 @@ cd GenEvolve
 
 conda create -n genevolve python=3.11 -y
 conda activate genevolve
+pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+pip install --no-build-isolation -r requirements.txt
 pip install -e .
 ```
 
-Install either `vllm` or `sglang` in this same environment if you plan to host `GenEvolve-8B` locally. Install Environment B only when you need the local Qwen diffusion renderer.
+This installs the full GenEvolve runtime stack, including vLLM/SGLang serving, the agent tools, and Qwen/Nano rendering wrappers.
 
 ### 2. Serve the released checkpoint
 
@@ -181,7 +182,7 @@ python examples/quickstart.py \
     --output paris.png
 ```
 
-For the open-generator path, use `--backend qwen-image-edit` after installing Environment B.
+For the open-generator path, use `--backend qwen-image-edit`; the full `genevolve` environment above includes the Qwen-Image-Edit wrapper dependencies.
 
 ### 4. Batch pipeline
 
@@ -320,7 +321,7 @@ print(sft[0]["images"])
 
 All paths inside the datasets are relative, for example `images/case_00512.jpg` or `images/traj_00213/IMG_001.jpg`; resolve them against the dataset directory you downloaded to. Per-dataset usage notes live on each dataset's Hub page.
 
-Although GenEvolve's training pipeline is not part of this repository, the released SFT and RL datasets together with the inference runtime here let you reproduce the path from a user request to a rendered image.
+The full training scripts are not included in this repository, but the released SFT/RL datasets, model weights, tools, and runtime let you reproduce the path from a user request to a rendered image.
 
 ## 🖼️ Visual results
 
@@ -369,7 +370,7 @@ Although GenEvolve's training pipeline is not part of this repository, the relea
 |---|---|
 | `search` / `image_search` returns authentication errors | Set `SERPER_API_KEY` or configure `SERPER_BASE_URL` for your internal Serper-compatible gateway. |
 | Agent cannot connect to the model | Confirm the vLLM/SGLang server is running and `OPENAI_BASE_URL` or `--base-url` ends with `/v1`. |
-| Qwen local renderer fails at import time | Install Environment B and make sure `diffusers>=0.38` is active. |
+| Qwen local renderer fails at import time | Install the full `genevolve` environment and make sure `diffusers>=0.38` is active. |
 | Qwen renderer says it needs a reference image | Qwen-Image-Edit is reference-conditioned; rerun the agent or use Nano Banana Pro for no-reference prompts. |
 | `flash-attn` build fails | Install a PyTorch/CUDA wheel first, then run `pip install flash-attn==2.8.3 --no-build-isolation`. |
 | Batch rendering resumes after interruption | `scripts/generate_images.py` writes `results.json` incrementally under the output directory. |

@@ -10,7 +10,7 @@ setup(
     version="0.1.0",
     description=(
         "GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated "
-        "Visual Experience Distillation (inference release)."
+        "Visual Experience Distillation."
     ),
     long_description=README,
     long_description_content_type="text/markdown",
@@ -20,15 +20,15 @@ setup(
     include_package_data=True,
     package_data={"genevolve": ["knowledge/skills/*.md"]},
     python_requires=">=3.10",
-    # Environment A (agent runtime). Install vllm / sglang / flash-attn
-    # separately in the same env to run the inference server. See README.
+    # Python package minimum. Install the full experiment stack from
+    # requirements.txt before editable install; see README.
     install_requires=[
         "openai>=1.30",
         "requests>=2.28",
         "pillow>=10.0",
     ],
     extras_require={
-        # Environment B (local Qwen-Image-Edit-2511 renderer).
+        # Kept for users who only need the local Qwen renderer wrapper.
         "qwen": [
             "torch>=2.6,<2.7",
             "diffusers>=0.38",

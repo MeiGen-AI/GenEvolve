@@ -1,4 +1,4 @@
-"""GenEvolve image-generation agent (inference-only, OpenAI-compatible).
+"""GenEvolve image-generation agent (OpenAI-compatible).
 
 This is a self-contained ReAct-style agent that talks to any OpenAI-compatible
 chat completion endpoint (vLLM, SGLang, OpenAI proxy, etc.) and orchestrates
@@ -12,9 +12,9 @@ The final answer is a prompt-reference program ``z = (gen_prompt, reference_imag
 that the user can feed to any reference-conditioned image generator (we ship
 backends for Qwen-Image-Edit and Nano Banana Pro --- see ``genevolve.generator``).
 
-Inference does NOT use any privileged teacher context or visual-experience
-memory; that is a training-only mechanism. The released student policy uses
-the same ``SYSTEM_PROMPT`` it was trained against.
+At rollout and evaluation time, the released policy uses the same
+``SYSTEM_PROMPT`` it was trained against. Privileged teacher context and
+dynamic visual-experience memory belong to the RL training path.
 """
 
 from __future__ import annotations

@@ -1,28 +1,56 @@
-# Core dependencies for the GenEvolve agent runtime (Environment A).
-# These are the lightweight client-side requirements; install one inference
-# server (vllm or sglang) separately to actually serve the GenEvolve-8B
-# checkpoint. See README §Requirements for full details.
-openai>=1.30
-requests>=2.28
-pillow>=10.0
+# GenEvolve full RL / evaluation / inference environment.
+# Install torch first as shown in README, then install this file with:
+#   pip install --no-build-isolation -r requirements.txt
 
-# --------------------------------------------------------------------------
-# Optional GPU / inference-server dependencies (NOT installed by default)
-# --------------------------------------------------------------------------
-# Install one of these in the same environment to host the released
-# GenEvolve-8B checkpoint as an OpenAI-compatible chat-completions service:
-#
-#   vllm>=0.11
-#   sglang[all]>=0.5.4
-#
-# Qwen3-VL fused attention (recommended, matches training-time kernel):
-#
-#   flash-attn==2.8.3        # pip install flash-attn==2.8.3 --no-build-isolation
-#
-# --------------------------------------------------------------------------
-# Environment B — local Qwen-Image-Edit-2511 renderer (`pip install -e ".[qwen]"`)
-# --------------------------------------------------------------------------
-# torch>=2.6,<2.7
-# diffusers>=0.38
-# transformers>=4.55
-# accelerate>=1.0
+# Core model stack
+torch==2.8.0
+torchvision==0.23.0
+transformers==4.57.1
+accelerate==1.13.0
+datasets==4.8.4
+peft==0.19.0
+qwen-vl-utils==0.0.14
+flash_attn==2.8.3
+
+# Serving and rollout
+vllm==0.11.0
+sglang==0.5.4.post2
+flashinfer-python==0.4.1
+ray==2.54.1
+
+# RL / agent infrastructure
+verl==0.6.1
+rllm==0.2.1
+hydra-core==1.3.2
+tensordict==0.8.3
+torchdata==0.11.0
+wandb
+sentence-transformers==5.4.1
+
+# Data / utilities
+numpy==1.26.4
+pandas
+polars==1.33.1
+pyarrow==23.0.1
+Pillow>=10.0
+requests==2.32.3
+openai>=1.30
+python-dotenv>=1.0
+PyYAML>=6.0
+tqdm
+json5
+aiosqlite
+oss2
+
+# Web/API services
+fastapi
+uvicorn
+sse-starlette
+python-multipart
+
+# Image generation
+diffusers>=0.38
+protobuf
+sentencepiece
+tiktoken
+safetensors

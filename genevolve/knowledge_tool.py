@@ -1,13 +1,12 @@
 """GenEvolve KnowledgeTool: exposes the eight callable generation skills.
 
-This is the lightweight, inference-only version of the ``query_knowledge`` tool.
 The agent calls ``query_knowledge(skill_name=<one of 8>)`` and gets back the
 corresponding skill instructions to weave into the final prompt-reference
 program. Skill text files are stored as plain Markdown under ``knowledge/skills/``.
 
-There is no embedding model and no dynamic experience buffer at inference time:
-the dynamic experience system is training-only privileged context (not
-released).
+During RL training, the full training tree augments these static skills with
+dynamic visual experience memory. This standalone package exposes the same
+skill interface needed for rollout, evaluation, and model release usage.
 """
 
 from __future__ import annotations
