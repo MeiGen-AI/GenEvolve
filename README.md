@@ -246,6 +246,18 @@ image.save("opera.png")
 
 <p align="center"><sub>The same <code>GenEvolve-8B</code> policy paired with two different reference-conditioned generators. <span style="color:#D97706">Orange</span> marks external/uncommon knowledge, <span style="color:#2563EB">blue</span> marks internal generation-knowledge requirements.</sub></p>
 
+### 🎨 Extended gallery — paired with Nano Banana Pro
+
+<p align="center"><img src="assets/gallery_nano.jpg" alt="GenEvolve + Nano Banana Pro gallery" width="100%"></p>
+
+<p align="center"><sub>Additional qualitative results of <code>GenEvolve-8B</code> with Nano Banana Pro as the downstream renderer. The agent autonomously orchestrates search, reference selection, and skill activation across diverse open-ended categories — spatial layout, text rendering, quantity counting, attribute binding, anatomy/pose, creative transfer, material physics, and aesthetic drawing.</sub></p>
+
+### 🎨 Extended gallery — paired with Qwen-Image-Edit (open)
+
+<p align="center"><img src="assets/gallery_qwen.jpg" alt="GenEvolve + Qwen-Image-Edit gallery" width="100%"></p>
+
+<p align="center"><sub>Same trained agent policy paired with the open-source Qwen-Image-Edit-2511 renderer. Consistent quality across both generators demonstrates that <code>GenEvolve-8B</code> learns generator-transferable tool orchestration rather than overfitting to one specific renderer.</sub></p>
+
 ## 📋 Requirements
 
 <details>
