@@ -4,7 +4,7 @@
 
 <h1>GenEvolve</h1>
 
-<p><strong><em>Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</em></strong></p>
+<h3><em>Self-Evolving Image Generation Agents via<br>Tool-Orchestrated Visual Experience Distillation</em></h3>
 
 <p>
   <a href="https://ephemeral182.github.io/GenEvolve/">
