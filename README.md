@@ -23,27 +23,31 @@
   <img alt="status" src="https://img.shields.io/badge/status-active-brightgreen">
 </p>
 
+</div>
+
+## 👥 Authors
+
+> [**Sixiang Chen**](https://ephemeral182.github.io/)<sup>1</sup>, **Zhaohu Xing**<sup>1</sup>, [**Tian Ye**](https://owen718.github.io/)<sup>1</sup>, [**Xinyu Geng**](https://scholar.google.com/citations?user=rYB-IBwAAAAJ&hl=zh-CN)<sup>2</sup>, [**Yunlong Lin**](https://lyl1015.github.io/)<sup>3</sup>, [**Jianyu Lai**](https://alexlai2860.github.io/)<sup>1</sup>, [**Xuanhua He**](https://xuanhuahe.github.io/)<sup>2</sup>, [**Fuxiang Zhai**](https://fuxiangzhai.github.io/)<sup>1</sup>, [**Jialin Gao**](https://scholar.google.com/citations?user=sj4FqEgAAAAJ&hl=zh-CN)<sup>4</sup>, [**Lei Zhu**](https://sites.google.com/site/indexlzhu/home)<sup>1,2</sup>†
+>
+> <sup>1</sup>The Hong Kong University of Science and Technology (Guangzhou)
+> <sup>2</sup>The Hong Kong University of Science and Technology
+> <sup>3</sup>The Chinese University of Hong Kong
+> <sup>4</sup>National University of Singapore
+>
+> †Corresponding Author
+
+---
+
+<div align="center">
 <img src="assets/teaser.jpg" alt="GenEvolve teaser" width="100%">
 
 <p><em>The same trained agent policy paired with two reference-conditioned generators ⟶<br>
 <strong>Qwen-Image-Edit (open)</strong> &nbsp;·&nbsp; <strong>Nano Banana Pro (strong)</strong></em></p>
-
 </div>
 
-<br>
+## 🌟 What is GenEvolve?
 
-> **TL;DR.** GenEvolve formulates open-ended image generation as a **tool-orchestrated visual trajectory**. The agent gathers external evidence, retrieves visual references, performs **internal knowledge activation**, and synthesizes a **prompt-reference program** $z = (g, R)$ that any reference-conditioned generator can render. Trained with GRPO + Visual Experience Distillation, the released `GenEvolve-8B` policy is **generator-transferable** — drop-in compatible with both open and strong proprietary renderers.
-
----
-
-## ✨ Highlights
-
-- 🧭 **Tool-orchestrated trajectory**, not prompt rewriting. Each rollout interleaves `search`, `image_search`, and `query_knowledge` over up to 11 turns.
-- 🛠️ **Eight callable generation skills** for *internal knowledge activation* — `spatial_layout`, `aesthetic_drawing`, `text_rendering`, `creative_drawing`, `anatomy_body_coherence`, `attribute_binding`, `physical_material_consistency`, `quantity_counting`.
-- 📐 **Prompt-reference program** $z = (g, R)$ as the agent's final output: a targeted instruction $g$ + an ordered set of selected references $R$.
-- 🔁 **Generator-transferable.** The same policy renders with **Qwen-Image-Edit-2511** (open) and **Nano Banana Pro** (`gemini-3-pro-image-preview`, strong).
-- 🌐 **OpenAI-compatible runtime.** Works with vLLM / SGLang / any compatible chat-completions server out of the box.
-- 🧰 **Single-file inference.** ~600 lines of pure Python; no `rllm` / `verl` dependency at inference time.
+GenEvolve formulates open-ended image generation as a **tool-orchestrated visual trajectory**. The agent gathers external textual evidence, retrieves visual references, performs **internal knowledge activation** through callable generation skills, and synthesizes a **prompt-reference program** $z = (g, R)$ that any reference-conditioned generator can render. Trained with GRPO + Visual Experience Distillation, the released `GenEvolve-8B` policy is **generator-transferable** — drop-in compatible with both open and strong proprietary renderers.
 
 ## 🧠 Method overview
 
