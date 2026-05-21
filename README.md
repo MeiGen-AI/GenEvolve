@@ -31,6 +31,8 @@
 >
 > <sup>4</sup>National University of Singapore
 
+**Project Leader:** Junfeng Luo (Meituan)
+
 ---
 
 <div align="center">
