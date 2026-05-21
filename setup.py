@@ -14,7 +14,7 @@ setup(
     ),
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://ephemeral182.github.io/GenEvolve/",
+    url="https://github.com/MeiGen-AI/GenEvolve",
     license="Apache-2.0",
     packages=find_packages(exclude=("scripts", "examples", "assets")),
     include_package_data=True,

@@ -11,7 +11,7 @@
     <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
   <a href="https://huggingface.co/MeiGen-AI/GenEvolve">
     <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve-FFD21E"></a>
-  <a href="https://github.com/Ephemeral182/GenEvolve">
+  <a href="https://github.com/MeiGen-AI/GenEvolve">
     <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717"></a>
 </p>
 
@@ -103,7 +103,7 @@ Start any Qwen-Image-Edit FastAPI service compatible with `POST /generate`; a co
 ### 1. Install the main GenEvolve runtime
 
 ```bash
-git clone https://github.com/Ephemeral182/GenEvolve.git
+git clone https://github.com/MeiGen-AI/GenEvolve.git
 cd GenEvolve
 
 conda create -n genevolve python=3.11 -y
