@@ -63,11 +63,11 @@ The released `GenEvolve` policy is based on Qwen3-VL-8B and is designed to be **
 
 ## 📋 Requirements
 
-GenEvolve uses one CUDA Python environment for policy serving, agent rollouts, tool execution, and benchmark inference. For reproducible Qwen rendering, run Qwen-Image-Edit as a separate FastAPI/diffusers service and call it from GenEvolve through `--service-url`.
+GenEvolve has a main runtime environment for policy serving, agent rollouts, tool execution, and benchmark inference. This is not the only process used in a full image-generation pipeline: for reproducible Qwen rendering, run Qwen-Image-Edit as a separate FastAPI/diffusers service and call it from GenEvolve through `--service-url`.
 
 ### Full GenEvolve environment - `genevolve`
 
-Use this environment for the released code path: serving `GenEvolve`, running the agent, calling tools, and rendering final images through Nano or a Qwen service client. Install it once using the Quickstart commands below.
+Use this environment for the released agent code path: serving `GenEvolve`, running the agent, calling tools, using the Nano client, and calling a Qwen service endpoint. Install it once using the Quickstart commands below.
 
 | Component | Version | Notes |
 |---|---|---|
@@ -80,7 +80,7 @@ Use this environment for the released code path: serving `GenEvolve`, running th
 | `flash-attn` | `2.8.3` |
 | `diffusers` | `>=0.38`, only needed for the optional local Qwen debug renderer |
 
-This is the normal full environment for the released code path. The released repository provides the model runtime, tools, skills, generator wrappers, and dataset links.
+This environment does not install or launch external services such as Qwen-Image-Edit, Serper, or the Google image API. Those are configured separately.
 
 ### External services
 
@@ -94,11 +94,18 @@ This is the normal full environment for the released code path. The released rep
 
 For Qwen rendering, use a separate service environment instead of mixing the diffusion stack into the vLLM server. A typical working stack is Python 3.11, PyTorch/torchvision `2.6.0`/`0.21.0` with CUDA 12.4 wheels, `diffusers>=0.38`, `transformers>=4.57`, `accelerate`, `fastapi`, `uvicorn`, `pillow`, and `requests`.
 
+```bash
+conda create -n qwenimage python=3.11 -y
+conda activate qwenimage
+pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+pip install "diffusers>=0.38" "transformers>=4.57" accelerate fastapi uvicorn pillow requests
+```
+
 Start any Qwen-Image-Edit FastAPI service compatible with `POST /generate`; a common deployment is one Qwen pipeline per visible GPU, with one HTTP endpoint such as `http://host:8001`. GenEvolve sends requests with `--backend qwen-image-edit-service --service-url http://host:8001`.
 
 ## 🚀 Quickstart
 
-### 1. Install the GenEvolve environment
+### 1. Install the main GenEvolve runtime
 
 ```bash
 git clone https://github.com/Ephemeral182/GenEvolve.git
@@ -111,7 +118,7 @@ pip install --no-build-isolation -r requirements.txt
 pip install -e .
 ```
 
-This installs the GenEvolve runtime stack, including vLLM serving, the agent tools, and Qwen/Nano rendering wrappers.
+This installs only the main GenEvolve runtime: vLLM serving, the agent tools, and lightweight generator clients/wrappers. It does not install or start the separate Qwen-Image-Edit service; set up that service from the Qwen environment section above when using `--backend qwen-image-edit-service`.
 
 ### 2. Serve the released checkpoint
 
