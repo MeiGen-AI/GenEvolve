@@ -19,7 +19,7 @@
 
 ## 👥 Authors
 
-> [**Sixiang Chen**](https://ephemeral182.github.io/)<sup>1</sup>, [**Zhaohu Xing**](https://ge-xing.github.io/)<sup>1</sup>, [**Tian Ye**](https://owen718.github.io/)<sup>1</sup>, [**Xinyu Geng**](https://scholar.google.com/citations?user=rYB-IBwAAAAJ&hl=zh-CN)<sup>2</sup>, [**Yunlong Lin**](https://lyl1015.github.io/)<sup>3</sup>, [**Jianyu Lai**](https://alexlai2860.github.io/)<sup>1</sup>, [**Xuanhua He**](https://xuanhuahe.github.io/)<sup>2</sup>, [**Fuxiang Zhai**](https://fuxiangzhai.github.io/)<sup>1</sup>, [**Jialin Gao**](https://scholar.google.com/citations?user=sj4FqEgAAAAJ&hl=zh-CN)<sup>4</sup>, [**Lei Zhu**](https://sites.google.com/site/indexlzhu/home)<sup>1,2</sup>†
+> [**Sixiang Chen**](https://ephemeral182.github.io/)<sup>1</sup>, [**Zhaohu Xing**](https://ge-xing.github.io/)<sup>1</sup>, [**Tian Ye**](https://owen718.github.io/)<sup>1</sup>, [**Xinyu Geng**](https://scholar.google.com/citations?user=rYB-IBwAAAAJ&hl=zh-CN)<sup>2</sup>, [**Yunlong Lin**](https://lyl1015.github.io/)<sup>3</sup>, [**Jianyu Lai**](https://alexlai2860.github.io/)<sup>1</sup>, [**Xuanhua He**](https://xuanhuahe.github.io/)<sup>2</sup>, [**Fuxiang Zhai**](https://fuxiangzhai.github.io/)<sup>1</sup>, [**Jialin Gao**](https://scholar.google.com/citations?user=sj4FqEgAAAAJ&hl=zh-CN)<sup>4,‡</sup>, [**Lei Zhu**](https://sites.google.com/site/indexlzhu/home)<sup>1,2,†</sup>
 >
 > <sup>1</sup>The Hong Kong University of Science and Technology (Guangzhou)
 >
@@ -28,8 +28,6 @@
 > <sup>3</sup>The Chinese University of Hong Kong
 >
 > <sup>4</sup>National University of Singapore
->
-> †Corresponding Author
 
 ---
 
@@ -432,18 +430,6 @@ The full training scripts are not included in this repository, but the released 
 | `SERPER_BASE_URL` | Override for Serper-compatible gateways | `https://google.serper.dev` |
 | `IMAGE_DOWNLOAD_DIR` | Local cache for `image_search` downloads | `/tmp/genevolve_images` |
 | `GOOGLE_API_KEY` / `GEMINI_API_KEY` | Google Generative Language API key | required for Nano backend |
-
-`GenEvolveAgent` constructor knobs:
-
-| Argument | Default | Note |
-|---|---|---|
-| `max_rounds` | `11` | Max ReAct turns; the last turn is forced to emit `<answer>`. |
-| `max_tokens_per_round` | `4096` | Per-turn max new tokens. |
-| `temperature` | `0.6` | Sampling temperature for the agent policy. |
-| `top_p` | `0.9` | Nucleus sampling for the agent policy. |
-| `max_prompt_length` | `6144` | Training/eval compatibility setting; the serving backend enforces the actual context limit. |
-| `max_response_length` | `30000` | Training/eval compatibility setting for long multi-turn trajectories. |
-| `n_max_reference_images` | `2` | Max reference images forwarded to the downstream generator. |
 
 ## 🧯 Troubleshooting
 
