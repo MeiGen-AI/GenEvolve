@@ -91,9 +91,13 @@ def _render_one(record: Dict[str, Any], backend: Any, images_dir: Path) -> Dict[
         image = backend.generate(run_prompt, run_refs)
         image.save(out_image)
         info["image_path"] = str(out_image)
+        info["output_path"] = str(out_image)
+        info["success"] = True
         info["image_status"] = "ok"
     except Exception as exc:  # noqa: BLE001
         info["image_path"] = ""
+        info["output_path"] = ""
+        info["success"] = False
         info["image_status"] = f"error: {exc}"
     return info
 

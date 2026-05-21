@@ -217,6 +217,12 @@ record. The agent script preserves extra fields such as `gt_image`,
 `eval_type`, `category`, and `difficulty`, and the rendering script copies
 them into its output `results.json`.
 
+The scorer in `scripts/evaluate_images.py` is the paper-compatible Gemini judge:
+it uses the same rubric prompt, the same image order (Image 1 = generated,
+Image 2 = GT), the same OpenAI-compatible multimodal chat-completions call, and
+the same score normalization and weighted overall formula used for the reported
+benchmark numbers. No service endpoint or API key is hard-coded.
+
 Example JSONL input:
 
 ```jsonl
@@ -242,13 +248,15 @@ python scripts/generate_images.py \
     --service-url http://your-qwen-service:8001 \
     --parallel 16
 
-# Stage 3: Gemini judge. GOOGLE_API_KEY is the official Google API key.
-export GOOGLE_API_KEY=<your_google_api_key>
+# Stage 3: Gemini judge.
+# Use an OpenAI-compatible Gemini chat-completions endpoint.
+export OPENAI_API_KEY=<your_eval_api_key>
+export OPENAI_API_BASE=<your_openai_compatible_base_url>
 python scripts/evaluate_images.py \
     --results runs/bench_qwen/results.json \
     --gt-root ./GenEvolve-Data/GenEvolve-Bench \
     --model gemini-3.1-pro-preview \
-    --parallel 16 \
+    --max-workers 16 \
     --rpm 60 \
     --resume
 ```
@@ -260,6 +268,10 @@ python scripts/evaluate_images.py \
 | `results_eval.json` | per-sample judge output and rationale |
 | `summary.json` | aggregate metrics |
 | `summary.csv` | the same metrics in table form |
+
+`results_eval.json` also appends the original category summary rows
+(`science_and_knowledge`, `pop_culture_and_news`, `overall_avg`) for
+compatibility with the paper evaluator.
 
 The reported metrics are `faithfulness`, `visual_correctness`,
 `text_accuracy`, `aesthetics`, and the weighted `overall` score:
@@ -406,11 +418,12 @@ The full training scripts are not included in this repository, but the released 
 | Variable | Purpose | Default |
 |---|---|---|
 | `OPENAI_BASE_URL` | OpenAI-compatible chat-completions endpoint | `http://localhost:8000/v1` |
-| `OPENAI_API_KEY` | API key for the inference server | `EMPTY` |
+| `OPENAI_API_KEY` | API key for the inference server or the OpenAI-compatible evaluator endpoint | `EMPTY` for local inference |
+| `OPENAI_API_BASE` | OpenAI-compatible Gemini judge endpoint used by `scripts/evaluate_images.py` | provider-specific |
 | `SERPER_API_KEY` | [serper.dev](https://serper.dev) key for text and image search | required |
 | `SERPER_BASE_URL` | Override for Serper-compatible gateways | `https://google.serper.dev` |
 | `IMAGE_DOWNLOAD_DIR` | Local cache for `image_search` downloads | `/tmp/genevolve_images` |
-| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend and Gemini judge scoring |
+| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend |
 
 `GenEvolveAgent` constructor knobs:
 
