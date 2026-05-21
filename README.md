@@ -484,7 +484,7 @@ We thank the authors and maintainers of **[Gen-Searcher](https://github.com/RUCA
 @inproceedings{chen2026genevolve,
   title     = {GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation},
   author    = {Chen, Sixiang and Xing, Zhaohu and Ye, Tian and Geng, Xinyu and Lin, Yunlong and Lai, Jianyu and He, Xuanhua and Zhai, Fuxiang and Gao, Jialin and Zhu, Lei},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  booktitle = {xxxx},
   year      = {2026}
 }
 ```
