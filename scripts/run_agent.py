@@ -22,7 +22,7 @@ Run a batch of prompts from a JSONL file (one ``{"id": ..., "prompt": ...}`` per
 Environment variables
 ---------------------
 ``OPENAI_BASE_URL``  : base URL of the OpenAI-compatible inference server.
-``OPENAI_API_KEY``   : API key (use ``EMPTY`` for local vLLM/SGLang).
+``OPENAI_API_KEY``   : API key (use ``EMPTY`` for a local vLLM server).
 ``SERPER_API_KEY``   : API key for https://serper.dev (text + image search).
 ``IMAGE_DOWNLOAD_DIR``: where to cache image_search downloads.
 """
@@ -100,7 +100,7 @@ def main() -> None:
     parser.add_argument("--max-samples", type=int, default=None)
     parser.add_argument("--output-dir", required=True)
 
-    parser.add_argument("--model", default=os.environ.get("GENEVOLVE_MODEL", "GenEvolve-8B"))
+    parser.add_argument("--model", default=os.environ.get("GENEVOLVE_MODEL", "GenEvolve"))
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL", "http://localhost:8000/v1"))
     parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "EMPTY"))
 

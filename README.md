@@ -11,8 +11,8 @@
     <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
   <a href="https://arxiv.org/abs/XXXX.XXXXX">
     <img alt="arXiv" src="https://img.shields.io/badge/📄_arXiv-XXXX.XXXXX-b31b1b"></a>
-  <a href="https://huggingface.co/Ephemeral182/GenEvolve-8B">
-    <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve--8B-FFD21E"></a>
+  <a href="https://huggingface.co/MeiGen-AI/GenEvolve">
+    <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve-FFD21E"></a>
   <a href="https://github.com/Ephemeral182/GenEvolve">
     <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717"></a>
 </p>
@@ -55,28 +55,28 @@
 
 GenEvolve formulates open-ended image generation as a **tool-orchestrated visual trajectory**. The agent gathers external textual evidence, retrieves visual references, performs **internal knowledge activation** through callable generation skills, and synthesizes a **prompt-reference program** $z = (g, R)$ that any reference-conditioned generator can render.
 
-The released `GenEvolve-8B` policy is based on Qwen3-VL-8B and is designed to be **generator-transferable**: the same agent output can be rendered by the open Qwen-Image-Edit backend or by a stronger proprietary renderer such as Nano Banana Pro.
+The released `GenEvolve` policy is based on Qwen3-VL-8B and is designed to be **generator-transferable**: the same agent output can be rendered by the open Qwen-Image-Edit backend or by a stronger proprietary renderer such as Nano Banana Pro.
 
 ## 🎁 What's released
 
 | Component | Where |
 |---|---|
-| 🧠 Trained agent policy `GenEvolve-8B` (Qwen3-VL-8B-based) | 🤗 [`Ephemeral182/GenEvolve-8B`](https://huggingface.co/Ephemeral182/GenEvolve-8B) |
+| 🧠 Trained agent policy `GenEvolve` (Qwen3-VL-8B-based) | 🤗 [`MeiGen-AI/GenEvolve`](https://huggingface.co/MeiGen-AI/GenEvolve) |
 | ⚡ Standalone inference runtime (`GenEvolveAgent`, OpenAI-compatible) | this repo |
 | 🛠️ Three tools (`search`, `image_search`, `query_knowledge`) | this repo |
 | 📚 The eight skill markdown files used at training time | this repo |
 | 🎨 Reference-conditioned generator wrappers (Qwen-Image-Edit + Nano Banana Pro) | this repo |
-| 📦 SFT trajectories (9,000 records) | 🤗 [`Ephemeral182/GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) |
-| 🎯 Self-evolution prompts + GT images (3,175 records) | 🤗 [`Ephemeral182/GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) |
-| 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`Ephemeral182/GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) |
+| 📦 SFT trajectories (9,000 records) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Data-SFT/` |
+| 🎯 Self-evolution prompts + GT images (3,175 records) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Data-RL/` |
+| 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Bench/` |
 
 ## 📋 Requirements
 
-GenEvolve uses one full CUDA Python environment for model serving, agent rollouts, tool execution, benchmark inference, and image generation. The versions below match the environment used for our released results and follow the same general stack as Gen-Searcher.
+GenEvolve uses one CUDA Python environment for policy serving, agent rollouts, tool execution, and benchmark inference. For reproducible Qwen rendering, run Qwen-Image-Edit as a separate FastAPI/diffusers service and call it from GenEvolve through `--service-url`.
 
 ### Full GenEvolve environment - `genevolve`
 
-Use this environment for the released code path: serving `GenEvolve-8B`, running the agent, calling tools, and rendering final images with Qwen/Nano backends. Install it once using the Quickstart commands below.
+Use this environment for the released code path: serving `GenEvolve`, running the agent, calling tools, and rendering final images through Nano or a Qwen service client. Install it once using the Quickstart commands below.
 
 | Component | Version | Notes |
 |---|---|---|
@@ -85,10 +85,9 @@ Use this environment for the released code path: serving `GenEvolve-8B`, running
 | `torch` / `torchvision` | `2.8.0` / `0.23.0` |
 | `transformers` | `4.57.1` |
 | `vllm` | `0.11.0` |
-| `sglang` | `0.5.4.post2` |
 | `ray` | `2.54.1` |
 | `flash-attn` | `2.8.3` |
-| `diffusers` | `>=0.38` for `QwenImageEditPlusPipeline` |
+| `diffusers` | `>=0.38`, only needed for the optional local Qwen debug renderer |
 
 This is the normal full environment for the released code path. The released repository provides the model runtime, tools, skills, generator wrappers, and dataset links.
 
@@ -98,6 +97,13 @@ This is the normal full environment for the released code path. The released rep
 |---|---|---|
 | [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
 | [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only for `--backend nano-banana-pro` |
+| Qwen-Image-Edit FastAPI service | `--service-url` | only for `--backend qwen-image-edit-service` |
+
+### Qwen-Image-Edit service environment
+
+For Qwen rendering, use a separate service environment instead of mixing the diffusion stack into the vLLM server. A typical working stack is Python 3.11, PyTorch/torchvision `2.6.0`/`0.21.0` with CUDA 12.4 wheels, `diffusers>=0.38`, `transformers>=4.57`, `accelerate`, `fastapi`, `uvicorn`, `pillow`, and `requests`.
+
+Start any Qwen-Image-Edit FastAPI service compatible with `POST /generate`; a common deployment is one Qwen pipeline per visible GPU, with one HTTP endpoint such as `http://host:8001`. GenEvolve sends requests with `--backend qwen-image-edit-service --service-url http://host:8001`.
 
 ## 🚀 Quickstart
 
@@ -114,31 +120,30 @@ pip install --no-build-isolation -r requirements.txt
 pip install -e .
 ```
 
-This installs the full GenEvolve runtime stack, including vLLM/SGLang serving, the agent tools, and Qwen/Nano rendering wrappers.
+This installs the GenEvolve runtime stack, including vLLM serving, the agent tools, and Qwen/Nano rendering wrappers.
 
 ### 2. Serve the released checkpoint
 
-The serving scripts support both tensor parallelism (`TP`) and data parallel replicas (`DP`).
+Put the Hugging Face checkpoint directory in `MODEL_PATH`. The serving scripts support both tensor parallelism (`TP`) and data parallel replicas (`DP`).
 
 - `TP` shards one model replica across multiple GPUs.
 - `DP` launches multiple model replicas to improve throughput for many concurrent prompts.
 - Total GPU usage is `TP × DP`.
+- Use a larger `DP` when `scripts/run_agent.py --parallel` is large and each request fits on one GPU.
+- Use a larger `TP` when one model replica needs more memory or longer context than one GPU can provide.
 
 ```bash
 # Single GPU / single replica.
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=1 bash scripts/serve_vllm.sh
+MODEL_PATH=MeiGen-AI/GenEvolve PORT=8000 TP=1 DP=1 bash scripts/serve_vllm.sh
 
 # Higher throughput on one 8-GPU node: 8 replicas, one GPU per replica.
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=8 bash scripts/serve_vllm.sh
+MODEL_PATH=MeiGen-AI/GenEvolve PORT=8000 TP=1 DP=8 bash scripts/serve_vllm.sh
 
 # If one replica needs more memory: 4 replicas, two GPUs per replica.
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=2 DP=4 bash scripts/serve_vllm.sh
-
-# SGLang uses the same TP/DP environment variables.
-MODEL_PATH=/path/to/GenEvolve-8B PORT=8000 TP=1 DP=8 bash scripts/serve_sglang.sh
+MODEL_PATH=MeiGen-AI/GenEvolve PORT=8000 TP=2 DP=4 bash scripts/serve_vllm.sh
 ```
 
-For a small demo, `TP=1 DP=1` is enough. For large batch inference with a high `scripts/run_agent.py --parallel` value, prefer increasing `DP` so independent prompts can be served by independent replicas. Increase `TP` when a single replica needs more GPU memory or a longer context window.
+For example, `TP=8 DP=1` is one model replica sharded over 8 GPUs. It is not 8 independent services. For throughput on one 8-GPU node, prefer `TP=1 DP=8` if the model fits on one GPU; use `TP=2 DP=4` or `TP=4 DP=2` when each replica needs multiple GPUs.
 
 ### 3. Run an end-to-end example
 
@@ -149,12 +154,23 @@ export GOOGLE_API_KEY=<your_key>             # only for the Nano Banana Pro back
 python examples/quickstart.py \
     --backend nano-banana-pro \
     --base-url http://localhost:8000/v1 \
-    --model GenEvolve-8B \
+    --model GenEvolve \
     --prompt "A 1990s travel-magazine cover of two backpackers in front of the Eiffel Tower at golden hour, the title \"PARIS\" rendered in bold serif type." \
     --output paris.png
 ```
 
-For the open-generator path, use `--backend qwen-image-edit`; the full `genevolve` environment above includes the Qwen-Image-Edit wrapper dependencies.
+For the open-generator path, use `--backend qwen-image-edit-service` with one or more Qwen-Image-Edit service endpoints:
+
+```bash
+python examples/quickstart.py \
+    --backend qwen-image-edit-service \
+    --service-url http://your-qwen-service:8001 \
+    --base-url http://localhost:8000/v1 \
+    --model GenEvolve \
+    --output paris_qwen.png
+```
+
+`--backend qwen-image-edit` is kept only as a local diffusers debug path when the Qwen-Image-Edit dependencies are installed in the active environment.
 
 ### 4. Batch pipeline
 
@@ -166,28 +182,37 @@ python scripts/run_agent.py \
     --input examples/example_prompts.jsonl \
     --output-dir runs/example \
     --base-url http://localhost:8000/v1 \
-    --model GenEvolve-8B \
+    --model GenEvolve \
     --parallel 4
 
-# Stage 2a: render locally with Qwen-Image-Edit-2511.
-python scripts/generate_images.py \
-    --input runs/example/results.json \
-    --output-dir runs/example_qwen \
-    --backend qwen-image-edit
-
-# Stage 2b: render through one or more remote Qwen-Image-Edit services.
+# Stage 2a: render through one or more Qwen-Image-Edit services.
+# Repeating --service-url enables round-robin dispatch; --parallel sends
+# concurrent requests so multiple service workers can be used.
 python scripts/generate_images.py \
     --input runs/example/results.json \
     --output-dir runs/example_qwen_service \
     --backend qwen-image-edit-service \
-    --service-url http://your-qwen-service:8001
+    --service-url http://your-qwen-service-1:8001 \
+    --service-url http://your-qwen-service-2:8001 \
+    --parallel 8
 
-# Stage 2c: render with Nano Banana Pro.
+# Stage 2b: render with Nano Banana Pro.
 python scripts/generate_images.py \
     --input runs/example/results.json \
     --output-dir runs/example_nano \
-    --backend nano-banana-pro
+    --backend nano-banana-pro \
+    --parallel 4
 ```
+
+Current script support:
+
+| Stage | Script | Scaling knobs |
+|---|---|---|
+| Agent model serving | `scripts/serve_vllm.sh` | `TP`, `DP`, `PORT`, `MAX_MODEL_LEN`, `MODEL_PATH` |
+| Agent rollouts | `scripts/run_agent.py` | `--parallel`, `--base-url`, `--model` |
+| Remote Qwen rendering | `scripts/generate_images.py --backend qwen-image-edit-service` | repeat `--service-url` and set `--parallel` |
+| Local Qwen debug rendering | `scripts/generate_images.py --backend qwen-image-edit` | single local process; requires a Qwen-compatible diffusers environment |
+| Nano rendering | `scripts/generate_images.py --backend nano-banana-pro` | `--parallel`, subject to API quota/rate limits |
 
 ## 🧩 Optional Python Usage
 
@@ -198,7 +223,7 @@ from genevolve import GenEvolveAgent
 from genevolve.generator import QwenImageEditGenerator  # or NanoBananaProGenerator
 
 agent = GenEvolveAgent(
-    model="GenEvolve-8B",
+    model="GenEvolve",
     base_url="http://localhost:8000/v1",
     api_key="EMPTY",
 )
@@ -263,32 +288,32 @@ The final answer is a JSON object, the **prompt-reference program**:
 
 ## 📦 Data
 
-We release three datasets on the Hugging Face Hub. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
+We release the training data and benchmark in one Hugging Face dataset repository. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
 
 | Dataset | Records | Size | Purpose |
 |---|---|---|---|
-| [`GenEvolve-Data-SFT`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-SFT) | 9,000 records | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
-| [`GenEvolve-Data-RL`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Data-RL) | 3,175 records | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
-| [`GenEvolve-Bench`](https://huggingface.co/datasets/Ephemeral182/GenEvolve-Bench) | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
+| `GenEvolve-Data-SFT/` | 9,000 records | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
+| `GenEvolve-Data-RL/` | 3,175 records | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
+| `GenEvolve-Bench/` | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
 
 ### Quick load
 
 ```bash
 pip install -U huggingface_hub datasets
 
-huggingface-cli download Ephemeral182/GenEvolve-Bench \
+huggingface-cli download MeiGen-AI/GenEvolve-Data \
     --repo-type dataset \
-    --local-dir ./GenEvolve-Bench
+    --local-dir ./GenEvolve-Data
 ```
 
 ```python
 from datasets import load_dataset
 
-bench = load_dataset("Ephemeral182/GenEvolve-Bench", split="test")
+bench = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Bench", split="test")
 print(bench[0]["question"], bench[0]["gt_image"])
 
-rl = load_dataset("Ephemeral182/GenEvolve-Data-RL", split="train")
-sft = load_dataset("Ephemeral182/GenEvolve-Data-SFT", split="train")
+rl = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Data-RL", split="train")
+sft = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Data-SFT", split="train")
 print(sft[0]["messages"])
 print(sft[0]["images"])
 ```
@@ -301,19 +326,19 @@ The full training scripts are not included in this repository, but the released 
 
 <p align="center"><img src="assets/visual_comparison.png" alt="Qualitative comparison" width="100%"></p>
 
-<p align="center"><sub>The same <code>GenEvolve-8B</code> policy paired with two different reference-conditioned generators. <span style="color:#D97706">Orange</span> marks external/uncommon knowledge, <span style="color:#2563EB">blue</span> marks internal generation-knowledge requirements.</sub></p>
+<p align="center"><sub>The same <code>GenEvolve</code> policy paired with two different reference-conditioned generators. <span style="color:#D97706">Orange</span> marks external/uncommon knowledge, <span style="color:#2563EB">blue</span> marks internal generation-knowledge requirements.</sub></p>
 
 ### 🎨 Extended gallery - paired with Nano Banana Pro
 
 <p align="center"><img src="assets/gallery_nano.jpg" alt="GenEvolve + Nano Banana Pro gallery" width="100%"></p>
 
-<p align="center"><sub>Additional qualitative results of <code>GenEvolve-8B</code> with Nano Banana Pro as the downstream renderer. The agent autonomously orchestrates search, reference selection, and skill activation across diverse open-ended categories: spatial layout, text rendering, quantity counting, attribute binding, anatomy/pose, creative transfer, material physics, and aesthetic drawing.</sub></p>
+<p align="center"><sub>Additional qualitative results of <code>GenEvolve</code> with Nano Banana Pro as the downstream renderer. The agent autonomously orchestrates search, reference selection, and skill activation across diverse open-ended categories: spatial layout, text rendering, quantity counting, attribute binding, anatomy/pose, creative transfer, material physics, and aesthetic drawing.</sub></p>
 
 ### 🎨 Extended gallery - paired with Qwen-Image-Edit (open)
 
 <p align="center"><img src="assets/gallery_qwen.jpg" alt="GenEvolve + Qwen-Image-Edit gallery" width="100%"></p>
 
-<p align="center"><sub>The same trained agent policy paired with the open-source Qwen-Image-Edit-2511 renderer. Consistent quality across both generators demonstrates that <code>GenEvolve-8B</code> learns generator-transferable tool orchestration rather than overfitting to one specific renderer.</sub></p>
+<p align="center"><sub>The same trained agent policy paired with the open-source Qwen-Image-Edit-2511 renderer. Consistent quality across both generators demonstrates that <code>GenEvolve</code> learns generator-transferable tool orchestration rather than overfitting to one specific renderer.</sub></p>
 
 ## ⚙️ Configuration
 
@@ -343,8 +368,8 @@ The full training scripts are not included in this repository, but the released 
 | Symptom | Check |
 |---|---|
 | `search` / `image_search` returns authentication errors | Set `SERPER_API_KEY` or configure `SERPER_BASE_URL` for your internal Serper-compatible gateway. |
-| Agent cannot connect to the model | Confirm the vLLM/SGLang server is running and `OPENAI_BASE_URL` or `--base-url` ends with `/v1`. |
-| Qwen local renderer fails at import time | Install the full `genevolve` environment and make sure `diffusers>=0.38` is active. |
+| Agent cannot connect to the model | Confirm the vLLM server is running and `OPENAI_BASE_URL` or `--base-url` ends with `/v1`. |
+| Qwen local renderer fails at import time | Use a separate Qwen-Image-Edit service environment and call it with `qwen-image-edit-service`; avoid mixing incompatible `xformers` / `flash-attn` combinations into the renderer env. |
 | Qwen renderer says it needs a reference image | Qwen-Image-Edit is reference-conditioned; rerun the agent or use Nano Banana Pro for no-reference prompts. |
 | `flash-attn` build fails | Install a PyTorch/CUDA wheel first, then run `pip install flash-attn==2.8.3 --no-build-isolation`. |
 | Batch rendering resumes after interruption | `scripts/generate_images.py` writes `results.json` incrementally under the output directory. |
@@ -362,7 +387,6 @@ genevolve/
 │   └── knowledge/skills/      # skill markdown files
 ├── scripts/
 │   ├── serve_vllm.sh          # serve the checkpoint with vLLM
-│   ├── serve_sglang.sh        # serve the checkpoint with SGLang
 │   ├── run_agent.py           # batch agent rollouts -> results.json
 │   └── generate_images.py     # render images from results.json
 ├── examples/

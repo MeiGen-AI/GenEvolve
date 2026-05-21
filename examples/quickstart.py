@@ -1,21 +1,28 @@
 """Minimal end-to-end example for GenEvolve inference.
 
 1. Start an OpenAI-compatible inference server with the GenEvolve checkpoint
-   (see ``scripts/serve_vllm.sh`` or ``scripts/serve_sglang.sh``).
+   (see ``scripts/serve_vllm.sh``).
 2. ``export SERPER_API_KEY=...`` so the agent can call text/image search.
 3. Run this script. By default it uses Nano Banana Pro for the final
-   reference-conditioned image; pass ``--backend qwen-image-edit`` to use the
-   open-source Qwen-Image-Edit generator instead.
+   reference-conditioned image; pass ``--backend qwen-image-edit-service`` to
+   call a Qwen-Image-Edit service endpoint instead.
 """
 
 from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from genevolve import GenEvolveAgent
-from genevolve.generator import NanoBananaProGenerator, QwenImageEditGenerator
+from genevolve.generator import (
+    NanoBananaProGenerator,
+    QwenImageEditGenerator,
+    QwenImageEditServiceGenerator,
+)
 
 
 def main() -> None:
@@ -26,10 +33,15 @@ def main() -> None:
         "the Eiffel Tower at golden hour, the title \"PARIS\" rendered in bold "
         "serif type at the top.",
     )
-    parser.add_argument("--backend", choices=["nano-banana-pro", "qwen-image-edit"], default="nano-banana-pro")
+    parser.add_argument(
+        "--backend",
+        choices=["nano-banana-pro", "qwen-image-edit", "qwen-image-edit-service"],
+        default="nano-banana-pro",
+    )
+    parser.add_argument("--service-url", action="append", default=None)
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL", "http://localhost:8000/v1"))
     parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "EMPTY"))
-    parser.add_argument("--model", default="GenEvolve-8B")
+    parser.add_argument("--model", default="GenEvolve")
     parser.add_argument("--output", default="quickstart_output.png")
     args = parser.parse_args()
 
@@ -51,6 +63,10 @@ def main() -> None:
 
     if args.backend == "qwen-image-edit":
         backend = QwenImageEditGenerator()
+    elif args.backend == "qwen-image-edit-service":
+        if not args.service_url:
+            raise ValueError("--service-url is required for --backend qwen-image-edit-service")
+        backend = QwenImageEditServiceGenerator(args.service_url)
     else:
         backend = NanoBananaProGenerator()
 

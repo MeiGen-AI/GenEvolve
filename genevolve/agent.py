@@ -1,7 +1,7 @@
 """GenEvolve image-generation agent (OpenAI-compatible).
 
-This is a self-contained ReAct-style agent that talks to any OpenAI-compatible
-chat completion endpoint (vLLM, SGLang, OpenAI proxy, etc.) and orchestrates
+This is a self-contained ReAct-style agent that talks to an OpenAI-compatible
+chat completion endpoint (for example vLLM or an OpenAI proxy) and orchestrates
 three tools:
 
   - ``search``           : text search.
@@ -178,7 +178,7 @@ class GenEvolveAgent:
     -------
     >>> from genevolve import GenEvolveAgent
     >>> agent = GenEvolveAgent(
-    ...     model="GenEvolve-8B",
+    ...     model="GenEvolve",
     ...     base_url="http://localhost:8000/v1",
     ...     api_key="EMPTY",
     ... )
@@ -189,7 +189,7 @@ class GenEvolveAgent:
 
     def __init__(
         self,
-        model: str = "GenEvolve-8B",
+        model: str = "GenEvolve",
         base_url: str = "http://localhost:8000/v1",
         api_key: str = "EMPTY",
         max_rounds: int = 11,

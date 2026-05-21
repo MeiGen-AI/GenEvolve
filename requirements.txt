@@ -14,7 +14,6 @@ flash_attn==2.8.3
 
 # Serving and rollout
 vllm==0.11.0
-sglang==0.5.4.post2
 flashinfer-python==0.4.1
 ray==2.54.1
 
@@ -48,7 +47,7 @@ uvicorn
 sse-starlette
 python-multipart
 
-# Image generation
+# Image generation clients and optional local Qwen debug renderer
 diffusers>=0.38
 protobuf
 sentencepiece

@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -69,6 +70,34 @@ def _ref_paths(record: Dict[str, Any]) -> List[str]:
     return paths
 
 
+def _save(summary: List[Dict[str, Any]], path: Path) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _render_one(record: Dict[str, Any], backend: Any, images_dir: Path) -> Dict[str, Any]:
+    rec_id = str(record.get("id", "unknown"))
+    gen_prompt = (record.get("gen_prompt") or "").strip()
+    prompt = (record.get("prompt") or "").strip()
+    ref_paths = _ref_paths(record)
+    if gen_prompt and ref_paths:
+        run_prompt, run_refs = gen_prompt, ref_paths
+    else:
+        run_prompt, run_refs = prompt, []
+    out_image = images_dir / f"{rec_id}.png"
+    info: Dict[str, Any] = dict(record)
+    try:
+        image = backend.generate(run_prompt, run_refs)
+        image.save(out_image)
+        info["image_path"] = str(out_image)
+        info["image_status"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        info["image_path"] = ""
+        info["image_status"] = f"error: {exc}"
+    return info
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Render images from GenEvolve agent outputs.")
     parser.add_argument("--input", required=True, help="results.json produced by run_agent.py")
@@ -89,10 +118,25 @@ def main() -> None:
     # Nano
     parser.add_argument("--nano-model", default="gemini-3-pro-image-preview")
     parser.add_argument("--google-api-key", default=os.environ.get("GOOGLE_API_KEY"))
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        help=(
+            "Concurrent render requests. Supported for qwen-image-edit-service "
+            "and nano-banana-pro; keep 1 for local qwen-image-edit."
+        ),
+    )
     args = parser.parse_args()
 
     with Path(args.input).open("r", encoding="utf-8") as fh:
         records = json.load(fh)
+    if args.backend == "qwen-image-edit" and args.parallel != 1:
+        raise ValueError(
+            "--parallel is only supported for service/API backends. "
+            "Use --backend qwen-image-edit-service with one or more --service-url values "
+            "for multi-worker Qwen rendering."
+        )
     backend = _build_backend(args)
 
     out_dir = Path(args.output_dir).resolve()
@@ -101,28 +145,24 @@ def main() -> None:
     summary_path = out_dir / "results.json"
 
     summary: List[Dict[str, Any]] = []
-    for rec in records:
-        rec_id = str(rec.get("id", "unknown"))
-        gen_prompt = (rec.get("gen_prompt") or "").strip()
-        prompt = (rec.get("prompt") or "").strip()
-        ref_paths = _ref_paths(rec)
-        if gen_prompt and ref_paths:
-            run_prompt, run_refs = gen_prompt, ref_paths
-        else:
-            run_prompt, run_refs = prompt, []
-        out_image = images_dir / f"{rec_id}.png"
-        info: Dict[str, Any] = dict(rec)
-        try:
-            image = backend.generate(run_prompt, run_refs)
-            image.save(out_image)
-            info["image_path"] = str(out_image)
-            info["image_status"] = "ok"
-        except Exception as exc:  # noqa: BLE001
-            info["image_path"] = ""
-            info["image_status"] = f"error: {exc}"
-        summary.append(info)
-        summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"[GenEvolve] {rec_id} -> {info.get('image_status')}")
+    parallel = max(1, int(args.parallel))
+    if parallel == 1:
+        for rec in records:
+            info = _render_one(rec, backend, images_dir)
+            summary.append(info)
+            _save(summary, summary_path)
+            print(f"[GenEvolve] {info.get('id', 'unknown')} -> {info.get('image_status')}")
+    else:
+        partial: List[Dict[str, Any] | None] = [None] * len(records)
+        with ThreadPoolExecutor(max_workers=parallel) as ex:
+            futures = {ex.submit(_render_one, rec, backend, images_dir): i for i, rec in enumerate(records)}
+            for fut in as_completed(futures):
+                idx = futures[fut]
+                info = fut.result()
+                partial[idx] = info
+                summary = [item for item in partial if item is not None]
+                _save(summary, summary_path)
+                print(f"[GenEvolve] {info.get('id', 'unknown')} -> {info.get('image_status')}")
 
     print(f"[GenEvolve] Saved {len(summary)} images to {images_dir}")
 

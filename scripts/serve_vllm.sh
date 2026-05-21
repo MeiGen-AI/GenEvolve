@@ -8,7 +8,7 @@
 set -euo pipefail
 
 MODEL_PATH="${MODEL_PATH:?Please set MODEL_PATH to the GenEvolve checkpoint directory}"
-SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-GenEvolve-8B}"
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-GenEvolve}"
 PORT="${PORT:-8000}"
 TP="${TP:-1}"
 DP="${DP:-1}"

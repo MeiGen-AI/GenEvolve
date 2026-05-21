@@ -28,6 +28,7 @@ import os
 import random
 import time
 from pathlib import Path
+from threading import Lock
 from typing import Any, List, Optional
 
 try:
@@ -207,10 +208,12 @@ class QwenImageEditServiceGenerator:
         self.max_refs = int(max_refs)
         self.seed = int(seed)
         self._cursor = 0
+        self._cursor_lock = Lock()
 
     def _next_url(self) -> str:
-        url = self.urls[self._cursor % len(self.urls)] + self.path
-        self._cursor += 1
+        with self._cursor_lock:
+            url = self.urls[self._cursor % len(self.urls)] + self.path
+            self._cursor += 1
         return url
 
     def _refs(self, image_paths: List[str]) -> List[str]:
