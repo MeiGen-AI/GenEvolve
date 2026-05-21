@@ -136,6 +136,9 @@ def main() -> None:
                 "rounds": 0,
                 "error": f"{exc}",
             }
+        for key, value in sample.items():
+            if key not in d:
+                d[key] = value
         d["id"] = sample.get("id")
         return d
 

@@ -12,3 +12,10 @@ runs/
 outputs/
 *.log
 .DS_Store
+.env
+.env.*
+*.key
+*.secret
+.serper_key
+google_api_key*
+serper_api_key*

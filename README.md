@@ -210,6 +210,71 @@ Current script support:
 | Local Qwen debug rendering | `scripts/generate_images.py --backend qwen-image-edit` | single local process; requires a Qwen-compatible diffusers environment |
 | Nano rendering | `scripts/generate_images.py --backend nano-banana-pro` | `--parallel`, subject to API quota/rate limits |
 
+### 5. Benchmark scoring
+
+To reproduce benchmark metrics, keep the ground-truth image path in each input
+record. The agent script preserves extra fields such as `gt_image`,
+`eval_type`, `category`, and `difficulty`, and the rendering script copies
+them into its output `results.json`.
+
+Example JSONL input:
+
+```jsonl
+{"id": "case_000001", "prompt": "A detailed image-generation request...", "gt_image": "images/case_000001.jpg", "eval_type": "T1"}
+```
+
+Run the same two-stage pipeline, then score the rendered images with Gemini:
+
+```bash
+# Stage 1: agent rollouts.
+python scripts/run_agent.py \
+    --input genevolve_bench.jsonl \
+    --output-dir runs/bench_agent \
+    --base-url http://localhost:8000/v1 \
+    --model GenEvolve \
+    --parallel 16
+
+# Stage 2: render images, for example through Qwen-Image-Edit services.
+python scripts/generate_images.py \
+    --input runs/bench_agent/results.json \
+    --output-dir runs/bench_qwen \
+    --backend qwen-image-edit-service \
+    --service-url http://your-qwen-service:8001 \
+    --parallel 16
+
+# Stage 3: Gemini judge. GOOGLE_API_KEY is the official Google API key.
+export GOOGLE_API_KEY=<your_google_api_key>
+python scripts/evaluate_images.py \
+    --results runs/bench_qwen/results.json \
+    --gt-root ./GenEvolve-Data/GenEvolve-Bench \
+    --model gemini-3.1-pro-preview \
+    --parallel 16 \
+    --rpm 60 \
+    --resume
+```
+
+`scripts/evaluate_images.py` writes:
+
+| File | Contents |
+|---|---|
+| `results_eval.json` | per-sample judge output and rationale |
+| `summary.json` | aggregate metrics |
+| `summary.csv` | the same metrics in table form |
+
+The reported metrics are `faithfulness`, `visual_correctness`,
+`text_accuracy`, `aesthetics`, and the weighted `overall` score:
+
+```text
+overall = 0.1 * faithfulness
+        + 0.4 * visual_correctness
+        + 0.4 * text_accuracy
+        + 0.1 * aesthetics
+```
+
+`overall_missing_zero` keeps the full denominator and treats missing or failed
+cases as zero. If `eval_type` is present, the summary also reports metrics by
+split, for example T1 and T3.
+
 ## 🧩 Optional Python Usage
 
 If you only want to run the provided scripts, you can skip this section. This is for users who want to call the agent and renderer directly from their own Python pipeline instead of going through `scripts/run_agent.py` and `scripts/generate_images.py`.
@@ -345,7 +410,7 @@ The full training scripts are not included in this repository, but the released 
 | `SERPER_API_KEY` | [serper.dev](https://serper.dev) key for text and image search | required |
 | `SERPER_BASE_URL` | Override for Serper-compatible gateways | `https://google.serper.dev` |
 | `IMAGE_DOWNLOAD_DIR` | Local cache for `image_search` downloads | `/tmp/genevolve_images` |
-| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend |
+| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend and Gemini judge scoring |
 
 `GenEvolveAgent` constructor knobs:
 
@@ -367,6 +432,7 @@ The full training scripts are not included in this repository, but the released 
 | Agent cannot connect to the model | Confirm the vLLM server is running and `OPENAI_BASE_URL` or `--base-url` ends with `/v1`. |
 | Qwen local renderer fails at import time | Use a separate Qwen-Image-Edit service environment and call it with `qwen-image-edit-service`; avoid mixing incompatible `xformers` / `flash-attn` combinations into the renderer env. |
 | Qwen renderer says it needs a reference image | Qwen-Image-Edit is reference-conditioned; rerun the agent or use Nano Banana Pro for no-reference prompts. |
+| `evaluate_images.py` cannot find GT images | Keep `gt_image` in each input record and pass `--gt-root` pointing to the downloaded benchmark directory. |
 | `flash-attn` build fails | Install a PyTorch/CUDA wheel first, then run `pip install flash-attn==2.8.3 --no-build-isolation`. |
 | Batch rendering resumes after interruption | `scripts/generate_images.py` writes `results.json` incrementally under the output directory. |
 
@@ -384,7 +450,8 @@ genevolve/
 ├── scripts/
 │   ├── serve_vllm.sh          # serve the checkpoint with vLLM
 │   ├── run_agent.py           # batch agent rollouts -> results.json
-│   └── generate_images.py     # render images from results.json
+│   ├── generate_images.py     # render images from results.json
+│   └── evaluate_images.py     # Gemini judge scoring and metric summary
 ├── examples/
 │   ├── quickstart.py          # single-prompt end-to-end example
 │   └── example_prompts.jsonl
