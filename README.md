@@ -11,6 +11,8 @@
     <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
   <a href="https://huggingface.co/MeiGen-AI/GenEvolve">
     <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve-FFD21E"></a>
+  <a href="https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data-Bench">
+    <img alt="Dataset" src="https://img.shields.io/badge/🤗_Dataset-GenEvolve--Data-FFD21E"></a>
   <a href="https://github.com/MeiGen-AI/GenEvolve">
     <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717"></a>
 </p>
