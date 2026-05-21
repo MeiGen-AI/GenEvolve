@@ -17,15 +17,6 @@
     <img alt="GitHub" src="https://img.shields.io/badge/💾_GitHub-Code-181717"></a>
 </p>
 
-<p>
-  <img alt="python" src="https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white">
-  <img alt="pytorch" src="https://img.shields.io/badge/pytorch-2.8-EE4C2C?logo=pytorch&logoColor=white">
-  <img alt="vllm" src="https://img.shields.io/badge/vLLM-0.11-30A14E">
-  <img alt="cuda" src="https://img.shields.io/badge/CUDA-12.x-76B900?logo=nvidia&logoColor=white">
-  <img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-green">
-  <img alt="status" src="https://img.shields.io/badge/status-active-brightgreen">
-</p>
-
 </div>
 
 ## 👥 Authors
