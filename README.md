@@ -55,9 +55,9 @@ The released `GenEvolve` policy is based on Qwen3-VL-8B and is designed to be **
 | 🛠️ Three tools (`search`, `image_search`, `query_knowledge`) | this repo |
 | 📚 The eight skill markdown files used at training time | this repo |
 | 🎨 Reference-conditioned generator wrappers (Qwen-Image-Edit + Nano Banana Pro) | this repo |
-| 📦 SFT trajectories (9,000 records) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Data-SFT/` |
-| 🎯 Self-evolution prompts + GT images (3,175 records) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Data-RL/` |
-| 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`MeiGen-AI/GenEvolve-Data`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data) / `GenEvolve-Bench/` |
+| 📦 SFT trajectories (9,000 records) | 🤗 [`MeiGen-AI/GenEvolve-Data-Bench`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data-Bench) / `GenEvolve-Data-SFT/` |
+| 🎯 Self-evolution prompts + GT images (3,175 records) | 🤗 [`MeiGen-AI/GenEvolve-Data-Bench`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data-Bench) / `GenEvolve-Data-RL/` |
+| 📊 Held-out evaluation benchmark (594 prompts + GT images) | 🤗 [`MeiGen-AI/GenEvolve-Data-Bench`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data-Bench) / `GenEvolve-Bench/` |
 
 ## 📋 Requirements
 
@@ -84,7 +84,7 @@ This environment does not install or launch external services such as Qwen-Image
 | Service | Variable | Used for |
 |---|---|---|
 | [serper.dev](https://serper.dev) | `SERPER_API_KEY` | required for `search` and `image_search` |
-| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` | only for `--backend nano-banana-pro` |
+| [Google Generative Language API](https://ai.google.dev/api) | `GOOGLE_API_KEY` or `GEMINI_API_KEY` | only for `--backend nano-banana-pro` |
 | Qwen-Image-Edit FastAPI service | `--service-url` | only for `--backend qwen-image-edit-service` |
 
 ### Qwen-Image-Edit service environment
@@ -145,7 +145,7 @@ For example, `TP=8 DP=1` is one model replica sharded over 8 GPUs. It is not 8 i
 
 ```bash
 export SERPER_API_KEY=<your_key>             # required for search and image_search
-export GOOGLE_API_KEY=<your_key>             # only for the Nano Banana Pro backend
+export GOOGLE_API_KEY=<your_key>             # or GEMINI_API_KEY; only for Nano Banana Pro
 
 python examples/quickstart.py \
     --backend nano-banana-pro \
@@ -212,10 +212,12 @@ Current script support:
 
 ### 5. Benchmark scoring
 
-To reproduce benchmark metrics, keep the ground-truth image path in each input
-record. The agent script preserves extra fields such as `gt_image`,
-`eval_type`, `category`, and `difficulty`, and the rendering script copies
-them into its output `results.json`.
+To reproduce benchmark metrics, download the public dataset and pass the
+benchmark JSONL directly to the agent runner. The public benchmark uses
+`question` as the prompt field; `scripts/run_agent.py` accepts both `question`
+and `prompt`, preserves extra fields such as `gt_image`, `eval_type`,
+`category`, and `difficulty`, and the rendering script copies them into its
+output `results.json`.
 
 The scorer in `scripts/evaluate_images.py` is the paper-compatible Gemini judge:
 it uses the same rubric prompt, the same image order (Image 1 = generated,
@@ -223,18 +225,22 @@ Image 2 = GT), the same OpenAI-compatible multimodal chat-completions call, and
 the same score normalization and weighted overall formula used for the reported
 benchmark numbers. No service endpoint or API key is hard-coded.
 
-Example JSONL input:
+Public benchmark row format:
 
 ```jsonl
-{"id": "case_000001", "prompt": "A detailed image-generation request...", "gt_image": "images/case_000001.jpg", "eval_type": "T1"}
+{"id": "0", "question": "A detailed image-generation request...", "gt_image": "images/case_00000.jpg", "eval_type": "Knowledge-Anchored", "category": "architecture_landmark", "difficulty": "hard"}
 ```
 
 Run the same two-stage pipeline, then score the rendered images with Gemini:
 
 ```bash
+huggingface-cli download MeiGen-AI/GenEvolve-Data-Bench \
+    --repo-type dataset \
+    --local-dir ./GenEvolve-Data-Bench
+
 # Stage 1: agent rollouts.
 python scripts/run_agent.py \
-    --input genevolve_bench.jsonl \
+    --input ./GenEvolve-Data-Bench/GenEvolve-Bench/test.jsonl \
     --output-dir runs/bench_agent \
     --base-url http://localhost:8000/v1 \
     --model GenEvolve \
@@ -254,7 +260,7 @@ export OPENAI_API_KEY=<your_eval_api_key>
 export OPENAI_API_BASE=<your_openai_compatible_base_url>
 python scripts/evaluate_images.py \
     --results runs/bench_qwen/results.json \
-    --gt-root ./GenEvolve-Data/GenEvolve-Bench \
+    --gt-root ./GenEvolve-Data-Bench/GenEvolve-Bench \
     --model gemini-3.1-pro-preview \
     --max-workers 16 \
     --rpm 60 \
@@ -269,9 +275,9 @@ python scripts/evaluate_images.py \
 | `summary.json` | aggregate metrics |
 | `summary.csv` | the same metrics in table form |
 
-`results_eval.json` also appends the original category summary rows
-(`science_and_knowledge`, `pop_culture_and_news`, `overall_avg`) for
-compatibility with the paper evaluator.
+`results_eval.json` also appends benchmark split summaries such as
+`eval_type:Knowledge-Anchored`, `eval_type:Quality-Anchored`, and
+`overall_avg`.
 
 The reported metrics are `faithfulness`, `visual_correctness`,
 `text_accuracy`, `aesthetics`, and the weighted `overall` score:
@@ -284,8 +290,8 @@ overall = 0.1 * faithfulness
 ```
 
 `overall_missing_zero` keeps the full denominator and treats missing or failed
-cases as zero. If `eval_type` is present, the summary also reports metrics by
-split, for example T1 and T3.
+cases as zero. The summary also reports metrics by `eval_type`, `category`,
+and `difficulty` when those fields are present.
 
 ## 🧩 Optional Python Usage
 
@@ -361,32 +367,34 @@ The final answer is a JSON object, the **prompt-reference program**:
 
 ## 📦 Data
 
-We release the training data and benchmark in one Hugging Face dataset repository. The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
+We release the training data and benchmark in one Hugging Face dataset repository: [`MeiGen-AI/GenEvolve-Data-Bench`](https://huggingface.co/datasets/MeiGen-AI/GenEvolve-Data-Bench). The total trajectory data is too large for GitHub but installs in one line via 🤗 `datasets` / `huggingface-cli`.
 
 | Dataset | Records | Size | Purpose |
 |---|---|---|---|
 | `GenEvolve-Data-SFT/` | 9,000 records | ~7.4 GB | Multi-turn tool-orchestrated trajectories used for the SFT cold start. Each record: `messages` (chat-format ReAct trajectory ending in `<answer>{gen_prompt, reference_images}`) + `images` (reference jpegs). |
 | `GenEvolve-Data-RL/` | 3,175 records | ~680 MB | Open-ended user requests paired with curated GT images. Used for GRPO + Visual Experience Distillation, where multiple agent rollouts per prompt are scored against the GT. |
-| `GenEvolve-Bench/` | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (T1, 335) and **Quality-Anchored** (T3, 259) tracks plus per-prompt category, difficulty, and skill metadata. |
+| `GenEvolve-Bench/` | 594 prompts | ~120 MB | Held-out evaluation benchmark. Contains both **Knowledge-Anchored** (335) and **Quality-Anchored** (259) tracks plus per-prompt category, difficulty, and skill metadata. |
 
 ### Quick load
 
 ```bash
 pip install -U huggingface_hub datasets
 
-huggingface-cli download MeiGen-AI/GenEvolve-Data \
+huggingface-cli download MeiGen-AI/GenEvolve-Data-Bench \
     --repo-type dataset \
-    --local-dir ./GenEvolve-Data
+    --local-dir ./GenEvolve-Data-Bench
 ```
 
 ```python
 from datasets import load_dataset
 
-bench = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Bench", split="test")
+repo_id = "MeiGen-AI/GenEvolve-Data-Bench"
+
+bench = load_dataset(repo_id, "bench", split="test")
 print(bench[0]["question"], bench[0]["gt_image"])
 
-rl = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Data-RL", split="train")
-sft = load_dataset("MeiGen-AI/GenEvolve-Data", data_dir="GenEvolve-Data-SFT", split="train")
+rl = load_dataset(repo_id, "rl", split="train")
+sft = load_dataset(repo_id, "sft", split="train")
 print(sft[0]["messages"])
 print(sft[0]["images"])
 ```
@@ -423,7 +431,7 @@ The full training scripts are not included in this repository, but the released 
 | `SERPER_API_KEY` | [serper.dev](https://serper.dev) key for text and image search | required |
 | `SERPER_BASE_URL` | Override for Serper-compatible gateways | `https://google.serper.dev` |
 | `IMAGE_DOWNLOAD_DIR` | Local cache for `image_search` downloads | `/tmp/genevolve_images` |
-| `GOOGLE_API_KEY` | Google Generative Language API key | required for Nano backend |
+| `GOOGLE_API_KEY` / `GEMINI_API_KEY` | Google Generative Language API key | required for Nano backend |
 
 `GenEvolveAgent` constructor knobs:
 

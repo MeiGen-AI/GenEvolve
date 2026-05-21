@@ -79,7 +79,7 @@ def _save(summary: List[Dict[str, Any]], path: Path) -> None:
 def _render_one(record: Dict[str, Any], backend: Any, images_dir: Path) -> Dict[str, Any]:
     rec_id = str(record.get("id", "unknown"))
     gen_prompt = (record.get("gen_prompt") or "").strip()
-    prompt = (record.get("prompt") or "").strip()
+    prompt = (record.get("prompt") or record.get("question") or "").strip()
     ref_paths = _ref_paths(record)
     if gen_prompt and ref_paths:
         run_prompt, run_refs = gen_prompt, ref_paths

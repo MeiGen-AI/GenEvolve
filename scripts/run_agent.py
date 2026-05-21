@@ -13,7 +13,8 @@ Run a single prompt:
         --prompt "Draw a cyberpunk Eiffel Tower at sunset." \
         --output-dir runs/single
 
-Run a batch of prompts from a JSONL file (one ``{"id": ..., "prompt": ...}`` per line):
+Run a batch of prompts from a JSONL file. Each row may use either ``prompt`` or
+the Hugging Face benchmark field ``question``:
 
     python scripts/run_agent.py \
         --input prompts.jsonl \
@@ -64,11 +65,16 @@ def _load_prompts(prompt: str | None, input_path: str | None, max_samples: int |
         items = items[:max_samples]
     cleaned: List[Dict[str, Any]] = []
     for i, it in enumerate(items):
-        if "prompt" not in it:
-            raise ValueError(f"Sample {i} missing 'prompt' field.")
-        if "id" not in it:
-            it["id"] = i
-        cleaned.append(it)
+        if not isinstance(it, dict):
+            raise ValueError(f"Sample {i} is not a JSON object.")
+        prompt_text = (it.get("prompt") or it.get("question") or "").strip()
+        if not prompt_text:
+            raise ValueError(f"Sample {i} missing non-empty 'prompt' or 'question' field.")
+        row = dict(it)
+        row["prompt"] = prompt_text
+        if "id" not in row:
+            row["id"] = i
+        cleaned.append(row)
     return cleaned
 
 
@@ -96,7 +102,7 @@ def _save(results: List[Dict[str, Any]], path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the GenEvolve image-generation agent.")
     parser.add_argument("--prompt", default=None, help="Single user prompt.")
-    parser.add_argument("--input", default=None, help="JSON/JSONL file of {id, prompt} samples.")
+    parser.add_argument("--input", default=None, help="JSON/JSONL file of samples with prompt or question fields.")
     parser.add_argument("--max-samples", type=int, default=None)
     parser.add_argument("--output-dir", required=True)
 
@@ -147,10 +153,13 @@ def main() -> None:
             results.append(_run_one(s))
             _save(results, out_path)
     else:
+        partial: List[Dict[str, Any] | None] = [None] * len(prompts)
         with ThreadPoolExecutor(max_workers=args.parallel) as ex:
-            futures = {ex.submit(_run_one, s): s for s in prompts}
+            futures = {ex.submit(_run_one, s): i for i, s in enumerate(prompts)}
             for fut in as_completed(futures):
-                results.append(fut.result())
+                idx = futures[fut]
+                partial[idx] = fut.result()
+                results = [item for item in partial if item is not None]
                 _save(results, out_path)
 
     print(f"[GenEvolve] Saved {len(results)} results to {out_path}")

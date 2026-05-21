@@ -287,8 +287,8 @@ class QwenImageEditServiceGenerator:
 class NanoBananaProGenerator:
     """Reference-conditioned generation via the Google Generative Language API.
 
-    Set ``GOOGLE_API_KEY`` (or pass ``api_key=...``). The default endpoint
-    matches the public Google REST API:
+    Set ``GOOGLE_API_KEY`` or ``GEMINI_API_KEY`` (or pass ``api_key=...``).
+    The default endpoint matches the public Google REST API:
 
         https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent
 
@@ -310,10 +310,15 @@ class NanoBananaProGenerator:
     ) -> None:
         if requests is None:
             raise RuntimeError("The `requests` package is required. `pip install requests`.")
-        self.api_key = (api_key or os.environ.get("GOOGLE_API_KEY") or "").strip()
+        self.api_key = (
+            api_key
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_API_KEY")
+            or ""
+        ).strip()
         if not self.api_key:
             raise RuntimeError(
-                "GOOGLE_API_KEY is not set. Set it in the environment or pass api_key=... to "
+                "GOOGLE_API_KEY/GEMINI_API_KEY is not set. Set one in the environment or pass api_key=... to "
                 "NanoBananaProGenerator."
             )
         self.model = model
@@ -344,8 +349,8 @@ class NanoBananaProGenerator:
                 continue
             img = _load_image(p)
             parts.append({
-                "inlineData": {
-                    "mimeType": "image/jpeg",
+                "inline_data": {
+                    "mime_type": "image/jpeg",
                     "data": _img_to_base64(img),
                 }
             })

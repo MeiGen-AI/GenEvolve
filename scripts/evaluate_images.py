@@ -9,7 +9,7 @@ path handling: it accepts ``results.json`` produced by ``scripts/generate_images
 
 Expected per-sample fields:
 
-  - ``prompt``: original image-generation request.
+  - ``prompt`` or ``question``: original image-generation request.
   - ``output_path`` or ``image_path``: generated image path.
   - ``gt_image``: ground-truth image path.
   - optional ``meta.eval_type`` or top-level ``eval_type`` for split summaries.
@@ -45,38 +45,6 @@ MAX_SIDE = 4096
 JPEG_QUALITY = 100
 SCORE_KEYS = ("faithfulness", "visual_correctness", "text_accuracy", "aesthetics")
 SUMMARY_SCORE_KEYS = (*SCORE_KEYS, "overall")
-
-
-CATEGORY_MAP = {
-    "science_and_knowledge": {
-        "astronomy",
-        "biology",
-        "chemistry",
-        "physics",
-        "engineering",
-        "medicine",
-        "industry",
-        "architecture",
-        "history",
-        "geography",
-        "religion",
-        "politics",
-        "culture",
-        "art",
-        "sports",
-    },
-    "pop_culture_and_news": {
-        "anime",
-        "game",
-        "film",
-        "celebrities",
-        "posters",
-        "multi-subject-anime",
-        "multi-subject-celebrities",
-        "multi-subject-game",
-        "news",
-    },
-}
 
 
 class RateLimiter:
@@ -146,7 +114,11 @@ def _write_csv(path: str, summary: Dict[str, Any]) -> None:
     rows: List[Dict[str, Any]] = []
     rows.append({"split": "all", **summary["all"]})
     for split, metrics in sorted(summary.get("by_eval_type", {}).items()):
-        rows.append({"split": split, **metrics})
+        rows.append({"split": f"eval_type:{split}", **metrics})
+    for split, metrics in sorted(summary.get("by_category", {}).items()):
+        rows.append({"split": f"category:{split}", **metrics})
+    for split, metrics in sorted(summary.get("by_difficulty", {}).items()):
+        rows.append({"split": f"difficulty:{split}", **metrics})
     with open(path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
@@ -545,70 +517,50 @@ def run_one_eval(
         return sample_id, False, {"error": str(exc)[:300]}
 
 
-def get_category_group(meta: dict) -> str:
-    """Return the paper's top-level category group; raise ValueError if no match."""
-    cat_raw = (meta.get("category") or "").strip().lower()
-    if not cat_raw:
-        raise ValueError(f"meta has no category field or it is empty: {meta}")
-    for group_name, categories in CATEGORY_MAP.items():
-        if cat_raw in categories:
-            return group_name
-    raise ValueError(f"category '{cat_raw}' does not match the two top-level groups")
+def avg_score_dict(score_rows: List[dict]) -> dict:
+    """Average score dictionaries using the same text-NA handling as the evaluator."""
+    if not score_rows:
+        return {key: 0.0 for key in SUMMARY_SCORE_KEYS}
+    out: Dict[str, float] = {}
+    for key in ("faithfulness", "visual_correctness", "aesthetics"):
+        vals = [float(s.get(key, 0)) for s in score_rows if isinstance(s.get(key), (int, float))]
+        out[key] = round(sum(vals) / len(vals), 4) if vals else 0.0
+    text_vals = [
+        float(s.get("text_accuracy", 0))
+        for s in score_rows
+        if not s.get("text_accuracy_na") and isinstance(s.get("text_accuracy"), (int, float))
+    ]
+    out["text_accuracy"] = round(sum(text_vals) / len(text_vals), 4) if text_vals else 0.5
+    out["overall"] = round(
+        0.1 * out["faithfulness"]
+        + 0.4 * out["visual_correctness"]
+        + 0.4 * out["text_accuracy"]
+        + 0.1 * out["aesthetics"],
+        4,
+    )
+    return out
 
 
-def build_summary_by_groups(rows: List[dict]) -> dict:
-    """Build the same category-group summary appended by the original evaluator."""
-    groups = {"science_and_knowledge": [], "pop_culture_and_news": []}
-    all_scores: List[dict] = []
-    uncategorized_count = 0
-    for row in rows:
-        if not row.get("eval_success"):
-            continue
-        meta = row.get("meta") or {}
-        scores = row.get("scores") or {}
-        if not isinstance(scores, dict):
-            continue
-        all_scores.append(scores)
-        try:
-            group = get_category_group(meta)
-            groups[group].append(scores)
-        except ValueError as exc:
-            uncategorized_count += 1
-            _log(f"[WARN] Sample {row.get('id')} has no recognized category; keeping it in overall_avg only: {exc}")
-
-    def avg_scores(score_rows: List[dict]) -> dict:
-        if not score_rows:
-            return {key: 0.0 for key in SUMMARY_SCORE_KEYS}
-        out: Dict[str, float] = {}
-        for key in ("faithfulness", "visual_correctness", "aesthetics"):
-            vals = [float(s.get(key, 0)) for s in score_rows if isinstance(s.get(key), (int, float))]
-            out[key] = round(sum(vals) / len(vals), 4) if vals else 0.0
-        text_vals = [
-            float(s.get("text_accuracy", 0))
-            for s in score_rows
-            if not s.get("text_accuracy_na") and isinstance(s.get("text_accuracy"), (int, float))
+def build_summary_for_output(rows: List[dict]) -> dict:
+    """Build summary rows matching the released benchmark splits."""
+    summary: Dict[str, Any] = {"by_eval_type": {}, "overall_avg": {}}
+    for eval_type in sorted({_row_eval_type(row) for row in rows}):
+        score_rows = [
+            row["scores"]
+            for row in rows
+            if _row_eval_type(row) == eval_type
+            and row.get("eval_success") is True
+            and isinstance(row.get("scores"), dict)
         ]
-        out["text_accuracy"] = round(sum(text_vals) / len(text_vals), 4) if text_vals else 0.5
-        out["overall"] = round(
-            0.1 * out["faithfulness"]
-            + 0.4 * out["visual_correctness"]
-            + 0.4 * out["text_accuracy"]
-            + 0.1 * out["aesthetics"],
-            4,
-        )
-        return out
-
-    summary = {}
-    for group_name, score_rows in groups.items():
-        summary[group_name] = {**avg_scores(score_rows), "count": len(score_rows)}
-    overall_avg = {**avg_scores(all_scores), "count": len(all_scores)}
-    overall_avg["uncategorized_count"] = uncategorized_count
-    summary["overall_avg"] = overall_avg
+        summary["by_eval_type"][eval_type] = {**avg_score_dict(score_rows), "count": len(score_rows)}
+    ok_rows = [row for row in rows if row.get("eval_success") is True and isinstance(row.get("scores"), dict)]
+    all_scores = [row["scores"] for row in ok_rows]
+    summary["overall_avg"] = {**avg_score_dict(all_scores), "count": len(all_scores)}
     return summary
 
 
 def build_output_with_summary(data: List[dict], results_by_id: Dict[str, dict]) -> Tuple[List[dict], dict]:
-    """Build output list in original order and append original category summary items."""
+    """Build output list in original order and append benchmark split summaries."""
     sorted_items: List[dict] = []
     for index, entry in enumerate(data):
         sample_id = str(entry.get("id", index))
@@ -620,28 +572,17 @@ def build_output_with_summary(data: List[dict], results_by_id: Dict[str, dict]) 
             record["error"] = "not_evaluated"
         sorted_items.append(record)
 
-    valid_rows = [
-        row
-        for row in sorted_items
-        if row.get("eval_success") is True and isinstance(row.get("scores"), dict)
-    ]
-    summary = build_summary_by_groups(valid_rows)
+    summary = build_summary_for_output(sorted_items)
 
     output_items = list(sorted_items)
-    output_items.append(
-        {
-            "summary_type": "science_and_knowledge",
-            "avg_scores": {key: summary["science_and_knowledge"][key] for key in SUMMARY_SCORE_KEYS},
-            "count": summary["science_and_knowledge"]["count"],
-        }
-    )
-    output_items.append(
-        {
-            "summary_type": "pop_culture_and_news",
-            "avg_scores": {key: summary["pop_culture_and_news"][key] for key in SUMMARY_SCORE_KEYS},
-            "count": summary["pop_culture_and_news"]["count"],
-        }
-    )
+    for eval_type, metrics in sorted(summary["by_eval_type"].items()):
+        output_items.append(
+            {
+                "summary_type": f"eval_type:{eval_type}",
+                "avg_scores": {key: metrics[key] for key in SUMMARY_SCORE_KEYS},
+                "count": metrics["count"],
+            }
+        )
     output_items.append(
         {
             "summary_type": "overall_avg",
@@ -661,6 +602,16 @@ def eval_rows(data: Any) -> List[Dict[str, Any]]:
 def _row_eval_type(row: Dict[str, Any]) -> str:
     meta = row.get("meta") if isinstance(row.get("meta"), dict) else {}
     return str(meta.get("eval_type") or row.get("eval_type") or row.get("tier") or "unknown")
+
+
+def _row_category(row: Dict[str, Any]) -> str:
+    meta = row.get("meta") if isinstance(row.get("meta"), dict) else {}
+    return str(row.get("category") or meta.get("category") or "unknown")
+
+
+def _row_difficulty(row: Dict[str, Any]) -> str:
+    meta = row.get("meta") if isinstance(row.get("meta"), dict) else {}
+    return str(row.get("difficulty") or meta.get("difficulty") or "unknown")
 
 
 def _row_case_id(row: Dict[str, Any]) -> str:
@@ -698,6 +649,8 @@ def build_benchmark_summary(eval_path: Path, total_cases: int) -> Dict[str, Any]
         "total_cases": denominator,
         "all": summarize_subset(rows, denominator),
         "by_eval_type": {},
+        "by_category": {},
+        "by_difficulty": {},
         "missing_case_ids": [],
         "failed_case_ids": [],
     }
@@ -711,6 +664,14 @@ def build_benchmark_summary(eval_path: Path, total_cases: int) -> Dict[str, Any]
     for eval_type in eval_types:
         subset = [row for row in rows if _row_eval_type(row) == eval_type]
         summary["by_eval_type"][eval_type] = summarize_subset(subset, len(subset))
+    categories = sorted({_row_category(row) for row in rows})
+    for category in categories:
+        subset = [row for row in rows if _row_category(row) == category]
+        summary["by_category"][category] = summarize_subset(subset, len(subset))
+    difficulties = sorted({_row_difficulty(row) for row in rows})
+    for difficulty in difficulties:
+        subset = [row for row in rows if _row_difficulty(row) == difficulty]
+        summary["by_difficulty"][difficulty] = summarize_subset(subset, len(subset))
     return summary
 
 
@@ -815,16 +776,15 @@ def main() -> None:
                 output_items, _ = build_output_with_summary(data, results_by_id)
                 _write_json(str(eval_path), output_items)
 
-    output_items, group_summary = build_output_with_summary(data, results_by_id)
+    output_items, output_summary = build_output_with_summary(data, results_by_id)
     _write_json(str(eval_path), output_items)
     benchmark_summary = build_benchmark_summary(eval_path, args.total_cases or len(data))
     _write_json(str(summary_json), benchmark_summary)
     _write_csv(str(summary_csv), benchmark_summary)
 
-    _log(f"Eval output (with original summaries): {eval_path}")
-    _log(f"Science & Knowledge: {group_summary['science_and_knowledge']}")
-    _log(f"Pop Culture & News: {group_summary['pop_culture_and_news']}")
-    _log(f"Overall Avg: {group_summary['overall_avg']}")
+    _log(f"Eval output: {eval_path}")
+    _log(f"Eval-type summaries: {output_summary['by_eval_type']}")
+    _log(f"Overall Avg: {output_summary['overall_avg']}")
     print(json.dumps(benchmark_summary, ensure_ascii=False, indent=2))
     print(f"summary_json={summary_json}")
     print(f"summary_csv={summary_csv}")
