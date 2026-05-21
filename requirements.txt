@@ -1,6 +1,9 @@
 # GenEvolve main runtime / evaluation environment.
-# Install torch first as shown in README, then install this file with:
+# Install build helpers and torch first as shown in README, then install this file with:
 #   pip install --no-build-isolation -r requirements.txt
+#
+# `flash_attn` is built with --no-build-isolation and expects psutil/ninja to
+# already be importable in the active environment.
 #
 # Qwen-Image-Edit rendering is intentionally run in a separate service
 # environment; see README for the qwenimage setup.

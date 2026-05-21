@@ -110,6 +110,7 @@ cd GenEvolve
 
 conda create -n genevolve python=3.11 -y
 conda activate genevolve
+pip install -U pip setuptools wheel packaging psutil ninja
 pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
 pip install --no-build-isolation -r requirements.txt
 pip install -e .
