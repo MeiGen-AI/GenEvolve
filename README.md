@@ -9,8 +9,6 @@
 <p>
   <a href="https://ephemeral182.github.io/GenEvolve/">
     <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
-  <a href="https://arxiv.org/abs/XXXX.XXXXX">
-    <img alt="arXiv" src="https://img.shields.io/badge/📄_arXiv-XXXX.XXXXX-b31b1b"></a>
   <a href="https://huggingface.co/MeiGen-AI/GenEvolve">
     <img alt="Weights" src="https://img.shields.io/badge/🤗_HuggingFace-GenEvolve-FFD21E"></a>
   <a href="https://github.com/Ephemeral182/GenEvolve">
@@ -65,7 +63,7 @@ The released `GenEvolve` policy is based on Qwen3-VL-8B and is designed to be **
 
 GenEvolve has a main runtime environment for policy serving, agent rollouts, tool execution, and benchmark inference. This is not the only process used in a full image-generation pipeline: for reproducible Qwen rendering, run Qwen-Image-Edit as a separate FastAPI/diffusers service and call it from GenEvolve through `--service-url`.
 
-### Full GenEvolve environment - `genevolve`
+### Main GenEvolve runtime - `genevolve`
 
 Use this environment for the released agent code path: serving `GenEvolve`, running the agent, calling tools, using the Nano client, and calling a Qwen service endpoint. Install it once using the Quickstart commands below.
 
@@ -78,7 +76,6 @@ Use this environment for the released agent code path: serving `GenEvolve`, runn
 | `vllm` | `0.11.0` |
 | `ray` | `2.54.1` |
 | `flash-attn` | `2.8.3` |
-| `diffusers` | `>=0.38`, only needed for the optional local Qwen debug renderer |
 
 This environment does not install or launch external services such as Qwen-Image-Edit, Serper, or the Google image API. Those are configured separately.
 
@@ -218,7 +215,7 @@ If you only want to run the provided scripts, you can skip this section. This is
 
 ```python
 from genevolve import GenEvolveAgent
-from genevolve.generator import QwenImageEditGenerator  # or NanoBananaProGenerator
+from genevolve.generator import QwenImageEditServiceGenerator  # or NanoBananaProGenerator
 
 agent = GenEvolveAgent(
     model="GenEvolve",
@@ -232,7 +229,7 @@ print(result.gen_prompt)
 for r in result.reference_images:
     print(r["img_id"], r["local_path"], r["note"])
 
-backend = QwenImageEditGenerator(model_id="Qwen/Qwen-Image-Edit-2511")
+backend = QwenImageEditServiceGenerator(["http://your-qwen-service:8001"])
 image = backend.generate(
     result.gen_prompt,
     [r["local_path"] for r in result.reference_images if r.get("local_path")],
@@ -399,6 +396,8 @@ genevolve/
 ## 🙏 Acknowledgements
 
 GenEvolve builds directly on **[Gen-Searcher](https://github.com/RUCAIBox/Gen-Searcher)** and inherits its three-tool ReAct interface and dual image/text reward design. We thank the Gen-Searcher authors for making their work publicly available.
+
+We also thank the maintainers of **Qwen3-VL**, **Qwen-Image-Edit**, **vLLM**, and the public APIs used by the released runtime, including Serper.dev and the Google Generative Language API.
 
 ## 📝 Citation
 

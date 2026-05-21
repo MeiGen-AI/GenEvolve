@@ -1,6 +1,9 @@
-# GenEvolve full runtime / evaluation / image-generation environment.
+# GenEvolve main runtime / evaluation environment.
 # Install torch first as shown in README, then install this file with:
 #   pip install --no-build-isolation -r requirements.txt
+#
+# Qwen-Image-Edit rendering is intentionally run in a separate service
+# environment; see README for the qwenimage setup.
 
 # Core model stack
 torch==2.8.0
@@ -17,16 +20,7 @@ vllm==0.11.0
 flashinfer-python==0.4.1
 ray==2.54.1
 
-# Agent/runtime infrastructure
-verl==0.6.1
-rllm==0.2.1
-hydra-core==1.3.2
-tensordict==0.8.3
-torchdata==0.11.0
-wandb
-sentence-transformers==5.4.1
-
-# Data / utilities
+# Agent/runtime and data utilities
 numpy==1.26.4
 pandas
 polars==1.33.1
@@ -41,14 +35,7 @@ json5
 aiosqlite
 oss2
 
-# Web/API services
-fastapi
-uvicorn
-sse-starlette
-python-multipart
-
-# Image generation clients and optional local Qwen debug renderer
-diffusers>=0.38
+# Model/tokenizer utilities
 protobuf
 sentencepiece
 tiktoken

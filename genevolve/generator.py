@@ -2,10 +2,11 @@
 
 Two backends are provided out of the box:
 
-  - ``QwenImageEditGenerator``  : open-source generator running
+  - ``QwenImageEditGenerator``  : local debug generator running
                                   ``Qwen/Qwen-Image-Edit-2511`` (the version
-                                  used in the paper) via ``diffusers``. Used
-                                  for the open-generator setting.
+                                  used in the paper) via ``diffusers``.
+  - ``QwenImageEditServiceGenerator`` : HTTP client for the recommended
+                                  Qwen-Image-Edit service deployment.
   - ``NanoBananaProGenerator``  : strong proprietary generator served by
                                   Google Generative Language API
                                   (``gemini-3-pro-image-preview``). Used for
@@ -125,7 +126,7 @@ class QwenImageEditGenerator:
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
                 "QwenImageEditGenerator requires `torch` and `diffusers>=0.38`. "
-                "Install the Qwen renderer extra with `pip install -e \".[qwen]\"`."
+                "Use a separate qwenimage renderer environment; see README."
             ) from exc
         torch_dtype = getattr(torch, self.dtype)
         self._pipe = QwenImageEditPlusPipeline.from_pretrained(

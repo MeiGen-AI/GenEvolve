@@ -20,7 +20,7 @@ setup(
     include_package_data=True,
     package_data={"genevolve": ["knowledge/skills/*.md"]},
     python_requires=">=3.10",
-    # Python package minimum. Install the full experiment stack from
+    # Python package minimum. Install the main runtime stack from
     # requirements.txt before editable install; see README.
     install_requires=[
         "openai>=1.30",
@@ -28,12 +28,15 @@ setup(
         "pillow>=10.0",
     ],
     extras_require={
-        # Kept for users who only need the local Qwen renderer wrapper.
+        # Install this inside a separate qwenimage renderer environment.
         "qwen": [
             "torch>=2.6,<2.7",
+            "torchvision>=0.21,<0.22",
             "diffusers>=0.38",
-            "transformers>=4.55",
+            "transformers>=4.57",
             "accelerate>=1.0",
+            "fastapi",
+            "uvicorn",
         ],
     },
     classifiers=[

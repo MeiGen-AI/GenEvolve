@@ -8,7 +8,7 @@ generator and saves the rendered images.
 
 Backends
 --------
-- ``qwen-image-edit``  : local diffusers run of ``Qwen/Qwen-Image-Edit-2511``.
+- ``qwen-image-edit``  : local diffusers debug run of ``Qwen/Qwen-Image-Edit-2511``.
 - ``qwen-image-edit-service`` : POSTs to a self-hosted Qwen-Image-Edit FastAPI
                                 service (``--service-url`` may be repeated).
 - ``nano-banana-pro``  : Google Generative Language API
@@ -105,7 +105,7 @@ def main() -> None:
     parser.add_argument(
         "--backend",
         choices=["qwen-image-edit", "qwen-image-edit-service", "nano-banana-pro"],
-        default="qwen-image-edit",
+        required=True,
     )
     # Qwen local
     parser.add_argument("--qwen-model-id", default="Qwen/Qwen-Image-Edit-2511")
