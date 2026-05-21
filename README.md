@@ -396,9 +396,7 @@ genevolve/
 
 ## 🙏 Acknowledgements
 
-GenEvolve builds directly on **[Gen-Searcher](https://github.com/RUCAIBox/Gen-Searcher)** and inherits its three-tool ReAct interface and dual image/text reward design. We thank the Gen-Searcher authors for making their work publicly available.
-
-We also thank the maintainers of **Qwen3-VL**, **Qwen-Image-Edit**, **vLLM**, and the public APIs used by the released runtime, including Serper.dev and the Google Generative Language API.
+We thank the authors and maintainers of **[Gen-Searcher](https://github.com/RUCAIBox/Gen-Searcher)**, **Qwen3-VL**, **Qwen-Image-Edit**, **vLLM**, Serper.dev, and the Google Generative Language API.
 
 ## 📝 Citation
 
