@@ -21,7 +21,6 @@
 
 </div>
 
-## 👥 Authors
 
 ## 👥 Authors
 
