@@ -7,6 +7,8 @@
 <p><strong><em>Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</em></strong></p>
 
 <p>
+  <a href="https://arxiv.org/abs/2605.21605">
+    <img alt="Paper" src="https://img.shields.io/badge/📄_Paper-arXiv:2605.21605-b31b1b"></a>
   <a href="https://ephemeral182.github.io/GenEvolve/">
     <img alt="Project Page" src="https://img.shields.io/badge/🌐_Project-Page-1f6feb"></a>
   <a href="https://huggingface.co/MeiGen-AI/GenEvolve">
