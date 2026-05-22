@@ -482,11 +482,14 @@ We thank the authors and maintainers of **[Gen-Searcher](https://github.com/RUCA
 ## 📝 Citation
 
 ```bibtex
-@inproceedings{chen2026genevolve,
-  title     = {GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation},
-  author    = {Chen, Sixiang and Xing, Zhaohu and Ye, Tian and Geng, Xinyu and Lin, Yunlong and Lai, Jianyu and He, Xuanhua and Zhai, Fuxiang and Gao, Jialin and Zhu, Lei},
-  booktitle = {xxxx},
-  year      = {2026}
+@misc{chen2026genevolveselfevolvingimagegeneration,
+      title={GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation}, 
+      author={Sixiang Chen and Zhaohu Xing and Tian Ye and Xinyu Geng and Yunlong Lin and Jianyu Lai and Xuanhua He and Fuxiang Zhai and Jialin Gao and Lei Zhu},
+      year={2026},
+      eprint={2605.21605},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.21605}, 
 }
 ```
 
